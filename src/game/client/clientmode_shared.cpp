@@ -513,9 +513,14 @@ bool ClientModeShared::ShouldDrawParticles( )
 void ClientModeShared::OverrideMouseInput( float *x, float *y )
 {
 	C_BaseCombatWeapon *pWeapon = GetActiveWeapon();
+	C_BaseCombatWeapon *pWeapon2 = GetActiveWeapon2();
 	if ( pWeapon )
 	{
 		pWeapon->OverrideMouseInput( x, y );
+	}
+	if ( pWeapon2 )
+	{
+		pWeapon2->OverrideMouseInput( x, y );
 	}
 }
 
@@ -729,6 +734,11 @@ int	ClientModeShared::KeyInput( int down, ButtonCode_t keynum, const char *pszCu
 	{
 		return pWeapon->KeyInput( down, keynum, pszCurrentBinding );
 	}
+	C_BaseCombatWeapon *pWeapon2 = GetActiveWeapon2();
+	if ( pWeapon2 )
+	{
+		return pWeapon2->KeyInput( down, keynum, pszCurrentBinding );
+	}
 
 	return 1;
 }
@@ -810,6 +820,9 @@ bool ClientModeShared::DoPostScreenSpaceEffects( const CViewSetup *pSetup )
 			return false;
 	}
 #endif 
+
+	g_GlowObjectManager.RenderGlowEffects( pSetup, 0 );
+
 	return true;
 }
 

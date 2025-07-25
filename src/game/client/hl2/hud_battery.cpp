@@ -46,7 +46,7 @@ private:
 	int		m_iNewBat;
 };
 
-DECLARE_HUDELEMENT( CHudBattery );
+//DECLARE_HUDELEMENT( CHudBattery );
 DECLARE_HUD_MESSAGE( CHudBattery, Battery );
 
 //-----------------------------------------------------------------------------

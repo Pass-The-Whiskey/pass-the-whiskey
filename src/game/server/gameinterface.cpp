@@ -90,6 +90,7 @@
 #include "serverbenchmark_base.h"
 #include "querycache.h"
 #include "player_voice_listener.h"
+#include "workshop/maps_workshop.h"
 
 #ifdef TF_DLL
 #include "gc_clientsystem.h"
@@ -98,7 +99,6 @@
 #include "tf/tf_gc_server.h"
 #include "tf_gamerules.h"
 #include "player_vs_environment/tf_population_manager.h"
-#include "workshop/maps_workshop.h"
 
 extern ConVar tf_mm_trusted;
 extern ConVar tf_mm_servermode;
@@ -1169,8 +1169,8 @@ void CServerGameDLL::GameServerSteamAPIActivated( void )
 #ifdef TF_DLL
 	GCClientSystem()->GameServerActivate();
 	InventoryManager()->GameServerSteamAPIActivated();
-	TFMapsWorkshop()->GameServerSteamAPIActivated();
 #endif
+	TFMapsWorkshop()->GameServerSteamAPIActivated();
 }
 
 //-----------------------------------------------------------------------------
@@ -1351,7 +1351,7 @@ void CServerGameDLL::Think( bool finalTick )
 	if ( m_fAutoSaveDangerousTime != 0.0f && m_fAutoSaveDangerousTime < gpGlobals->curtime )
 	{
 		// The safety timer for a dangerous auto save has expired
-		CBasePlayer *pPlayer = UTIL_PlayerByIndex( 1 );
+		CBasePlayer *pPlayer = UTIL_GetLocalPlayerOrListenServerHost();
 
 		if ( pPlayer && ( pPlayer->GetDeathTime() == 0.0f || pPlayer->GetDeathTime() > gpGlobals->curtime )
 			&& !pPlayer->IsSinglePlayerGameEnding()
@@ -1961,9 +1961,7 @@ void CServerGameDLL::Status( void (*print) (const char *fmt, ...) )
 void CServerGameDLL::PrepareLevelResources( /* in/out */ char *pszMapName, size_t nMapNameSize,
                                             /* in/out */ char *pszMapFile, size_t nMapFileSize )
 {
-#ifdef TF_DLL
 	TFMapsWorkshop()->PrepareLevelResources( pszMapName, nMapNameSize, pszMapFile, nMapFileSize );
-#endif // TF_DLL
 }
 
 //-----------------------------------------------------------------------------
@@ -1972,24 +1970,13 @@ CServerGameDLL::AsyncPrepareLevelResources( /* in/out */ char *pszMapName, size_
                                             /* in/out */ char *pszMapFile, size_t nMapFileSize,
                                             float *flProgress /* = NULL */ )
 {
-#ifdef TF_DLL
 	return TFMapsWorkshop()->AsyncPrepareLevelResources( pszMapName, nMapNameSize, pszMapFile, nMapFileSize, flProgress );
-#endif // TF_DLL
-
-	if ( flProgress )
-	{
-		*flProgress = 1.f;
-	}
-	return IServerGameDLL::ePrepareLevelResources_Prepared;
 }
 
 //-----------------------------------------------------------------------------
 IServerGameDLL::eCanProvideLevelResult CServerGameDLL::CanProvideLevel( /* in/out */ char *pMapName, int nMapNameMax )
 {
-#ifdef TF_DLL
 	return TFMapsWorkshop()->OnCanProvideLevel( pMapName, nMapNameMax );
-#endif // TF_DLL
-	return IServerGameDLL::eCanProvideLevel_CannotProvide;
 }
 
 //-----------------------------------------------------------------------------
@@ -2006,10 +1993,7 @@ bool CServerGameDLL::IsManualMapChangeOkay( const char **pszReason )
 //-----------------------------------------------------------------------------
 bool CServerGameDLL::GetWorkshopMap( uint32 uIndex, WorkshopMapDesc_t *pDesc )
 {
-#ifdef TF_DLL
 	return TFMapsWorkshop()->GetWorkshopMapDesc( uIndex, pDesc );
-#endif // TF_DLL
-	return false;
 }
 
 //-----------------------------------------------------------------------------
@@ -3174,7 +3158,7 @@ void CServerGameClients::GetBugReportInfo( char *buf, int buflen )
 
 	if ( gpGlobals->maxClients == 1 )
 	{
-		CBaseEntity *ent = FindPickerEntity( UTIL_PlayerByIndex(1) );
+		CBaseEntity *ent = FindPickerEntity( UTIL_GetLocalPlayerOrListenServerHost() );
 		if ( ent )
 		{
 			Q_snprintf( buf, buflen, "Picker %i/%s - ent %s model %s\n",

@@ -403,6 +403,11 @@ void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePos
 
 			CalcViewModelLag( vmorigin, vmangles, vmangoriginal );
 		}
+
+		if ( pWeapon->HasIronsights() )
+		{
+			CalcIronsights( vmorigin, vmangles );
+		}
 	}
 	// Add model-specific bob even if no weapon associated (for head bob for off hand models)
 	AddViewModelBob( owner, vmorigin, vmangles );
@@ -453,6 +458,30 @@ void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePos
 
 }
 
+void CBaseViewModel::CalcIronsights( Vector &pos, QAngle &ang )
+{
+	CBaseCombatWeapon *pWeapon = GetOwningWeapon();
+
+	if ( !pWeapon )
+		return;
+
+	float exp = pWeapon->GetIronsightPercent();
+
+	Vector newPos = pos;
+	QAngle newAng = ang;
+
+	Vector vForward, vRight, vUp, vOffset;
+	AngleVectors( newAng, &vForward, &vRight, &vUp );
+	vOffset = pWeapon->GetIronsightPositionOffset();
+
+	newPos += (vForward * vOffset.x) * exp;
+	newPos += (vRight * vOffset.y) * exp;
+	newPos += (vUp * vOffset.z) * exp;
+	//fov is handled by CBaseCombatWeapon
+
+	pos = newPos;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -474,7 +503,7 @@ void CBaseViewModel::CalcViewModelLag( Vector& origin, QAngle& angles, QAngle& o
 		Vector vDifference;
 		VectorSubtract( forward, m_vecLastFacing, vDifference );
 
-		float flSpeed = 5.0f;
+		float flSpeed = 25.0f + ( GetOwningWeapon()->GetIronsightPercent() * 25.f );
 
 		// If we start to lag too far behind, we'll increase the "catch up" speed.  Solves the problem with fast cl_yawspeed, m_yaw or joysticks
 		//  rotating quickly.  The old code would slam lastfacing with origin causing the viewmodel to pop to a new position

@@ -274,15 +274,29 @@ void CBasePlayer::ItemPostFrame()
 	}
 	else
 	{
-		if ( GetActiveWeapon() && (!IsInAVehicle() || UsingStandardWeaponsInVehicle()) )
+		if ( (!IsInAVehicle() || UsingStandardWeaponsInVehicle()) )
 		{
+			if ( GetActiveWeapon() )
+			{
 #if defined( CLIENT_DLL )
-			// Not predicting this weapon
-			if ( GetActiveWeapon()->IsPredicted() )
+				// Not predicting this weapon
+				if ( GetActiveWeapon()->IsPredicted() )
 #endif
 
+				{
+					GetActiveWeapon()->ItemPostFrame( );
+				}
+			}
+			if ( GetActiveWeapon2() )
 			{
-				GetActiveWeapon()->ItemPostFrame( );
+#if defined( CLIENT_DLL )
+				// Not predicting this weapon
+				if ( GetActiveWeapon2()->IsPredicted() )
+#endif
+
+				{
+					GetActiveWeapon2()->ItemPostFrame( );
+				}
 			}
 		}
 	}

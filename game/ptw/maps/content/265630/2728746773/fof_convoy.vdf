@@ -1,0 +1,11 @@
+"workshopitem"
+{
+	"appid"		"265630"
+	"publishedfileid"		"2728746773"
+	"contentfolder"		"C:\fof_convoy"
+	"previewfile"		"C:\fof_convoy\preview.jpg"
+	"visibility"		"0"
+	"title"		"fof_convoy"
+	"description"		""
+	"changenote"		"Removed invisible fence, added more clip brushes to assist movement, edited nav mesh for smarter bot behavior, fixed ungrabbable whiskey, removed collisions on bar stools, removed troll spawn, added more spawns, added more whiskey"
+}

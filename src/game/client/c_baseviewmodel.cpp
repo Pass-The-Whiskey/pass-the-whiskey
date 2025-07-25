@@ -215,7 +215,12 @@ bool C_BaseViewModel::ShouldFlipViewModel()
 	}
 #endif
 
-	return false;
+	CBaseCombatWeapon *pWeapon = m_hWeapon.Get();
+
+	if ( !pWeapon )
+		return false;
+
+	return pWeapon->m_bFlipViewModel || pWeapon->IsSecondary();
 }
 
 

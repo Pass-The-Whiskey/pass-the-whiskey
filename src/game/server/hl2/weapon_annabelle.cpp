@@ -337,8 +337,6 @@ void CWeaponAnnabelle::ItemHolsterFrame( void )
 //-----------------------------------------------------------------------------
 CWeaponAnnabelle::CWeaponAnnabelle( void )
 {
-	m_bReloadsSingly = true;
-
 	m_bNeedPump		= false;
 	m_bDelayedFire1 = false;
 	m_bDelayedFire2 = false;

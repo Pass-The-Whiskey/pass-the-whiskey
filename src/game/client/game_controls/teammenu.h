@@ -64,24 +64,33 @@ protected:
 	
 	// VGUI2 overrides
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
+	virtual void ApplySettings(KeyValues* inResourceData);
 	virtual void OnKeyCodePressed(vgui::KeyCode code);
 
 	// helper functions
-	virtual void SetLabelText(const char *textEntryName, const char *text);
-	virtual void LoadMapPage( const char *mapName );
-	// virtual void MakeTeamButtons( void );
+	virtual void UpdateTeamButtons( void );
 	
 	// command callbacks
+	void OnCommand( const char *command );
 	// MESSAGE_FUNC_INT( OnTeamButton, "TeamButton", team );
 
 	IViewPort	*m_pViewPort;
-	vgui::RichText *m_pMapInfo;
-	vgui::HTML *m_pMapInfoHTML;
+
 //	int m_iNumTeams;
 	ButtonCode_t m_iJumpKey;
 	ButtonCode_t m_iScoreBoardKey;
 
 	char m_szMapName[ MAX_PATH ];
+
+	int		m_iTeamCount;
+	bool	m_bTeamplay;
+
+	CUtlVector< vgui::Button* >	m_vecTeamButtons;
+
+	CPanelAnimationVarAliasType( int, m_iTeamWide, "team_wide", "70", "proportional_int" );
+	CPanelAnimationVarAliasType( int, m_iTeamTall, "team_tall", "70", "proportional_int" );
+
+	CPanelAnimationVarAliasType( int, m_iTeamPadding, "team_padding", "7", "proportional_int" );
 };
 
 

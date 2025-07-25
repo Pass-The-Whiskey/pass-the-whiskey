@@ -56,7 +56,7 @@ private:
 	CMaterialReference m_ZoomMaterial;
 };
 
-DECLARE_HUDELEMENT( CHudZoom );
+//DECLARE_HUDELEMENT( CHudZoom );
 
 using namespace vgui;
 

@@ -53,7 +53,7 @@ private:
 	CHudTexture *m_iconPrimaryAmmo;
 };
 
-DECLARE_HUDELEMENT( CHudAmmo );
+//DECLARE_HUDELEMENT( CHudAmmo );
 
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
@@ -492,5 +492,5 @@ private:
 	int		m_iAmmo;
 };
 
-DECLARE_HUDELEMENT( CHudSecondaryAmmo );
+//DECLARE_HUDELEMENT( CHudSecondaryAmmo );
 

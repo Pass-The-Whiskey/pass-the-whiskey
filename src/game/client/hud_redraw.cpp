@@ -89,6 +89,11 @@ void CHud::Think(void)
 	{
 		pWeapon->HandleInput();
 	}
+	C_BaseCombatWeapon *pWeapon2 = GetActiveWeapon2();
+	if ( pWeapon2 )
+	{
+		pWeapon2->HandleInput();
+	}
 
 	if ( ( m_flScreenShotTime > 0 ) && ( m_flScreenShotTime < gpGlobals->curtime ) )
 	{

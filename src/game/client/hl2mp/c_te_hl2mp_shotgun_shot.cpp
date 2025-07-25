@@ -32,6 +32,7 @@ public:
 	int		m_iShots;
 	bool	m_bDoImpacts;
 	bool	m_bDoTracers;
+	bool	m_bLeftHand;
 };
 
 class CTraceFilterSkipPlayerAndViewModelOnly : public CTraceFilter
@@ -65,11 +66,10 @@ void C_TEHL2MPFireBullets::CreateEffects( void )
 	if ( pEnt )
 	{
 		C_BasePlayer *pPlayer = dynamic_cast<C_BasePlayer *>(pEnt);
+		C_BaseCombatWeapon *pWpn = m_bLeftHand ? pPlayer->GetActiveWeapon2() : pPlayer->GetActiveWeapon();
 
-		if ( pPlayer && pPlayer->GetActiveWeapon() )
+		if ( pPlayer && pWpn )
 		{
-			C_BaseCombatWeapon *pWpn = dynamic_cast<C_BaseCombatWeapon *>( pPlayer->GetActiveWeapon() );
-
 			if ( pWpn )
 			{
 				int iSeed = m_iSeed;
@@ -155,6 +155,7 @@ BEGIN_RECV_TABLE_NOBASE(C_TEHL2MPFireBullets, DT_TEHL2MPFireBullets )
 	RecvPropFloat( RECVINFO( m_flSpread ) ),
 	RecvPropBool( RECVINFO( m_bDoImpacts ) ),
 	RecvPropBool( RECVINFO( m_bDoTracers ) ),
+	RecvPropBool( RECVINFO( m_bLeftHand ) ),
 END_RECV_TABLE()
 
 

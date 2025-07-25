@@ -21,6 +21,6 @@ class C_BaseViewModel;
 
 // Accessors for local weapons
 C_BaseCombatWeapon *GetActiveWeapon( void );
-
+C_BaseCombatWeapon *GetActiveWeapon2( void );
 
 #endif // C_BASECOMBATWEAPON

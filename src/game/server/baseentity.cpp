@@ -1048,6 +1048,8 @@ void CBaseEntity::DrawDebugGeometryOverlays(void)
 			if( pPlayer->GetActiveWeapon() != NULL )
 				radius *= pPlayer->GetActiveWeapon()->WeaponAutoAimScale();
 
+			if( pPlayer->GetActiveWeapon2() != NULL )
+				radius *= pPlayer->GetActiveWeapon2()->WeaponAutoAimScale();
 		}
 		else
 		{
@@ -2162,7 +2164,7 @@ BEGIN_DATADESC_NO_BASE( CBaseEntity )
 
 	DEFINE_INPUTFUNC( FIELD_VOID, "Kill", InputKill ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "KillHierarchy", InputKillHierarchy ),
-	DEFINE_INPUTFUNC( FIELD_VOID, "Use", InputUse ),
+	DEFINE_INPUTFUNC( FIELD_FLOAT, "Use", InputUse ),
 	DEFINE_INPUTFUNC( FIELD_INTEGER, "Alpha", InputAlpha ),
 	DEFINE_INPUTFUNC( FIELD_BOOLEAN, "AlternativeSorting", InputAlternativeSorting ),
 	DEFINE_INPUTFUNC( FIELD_COLOR32, "Color", InputColor ),
@@ -4511,7 +4513,7 @@ void CBaseEntity::InputColor( inputdata_t &inputdata )
 //-----------------------------------------------------------------------------
 void CBaseEntity::InputUse( inputdata_t &inputdata )
 {
-	Use( inputdata.pActivator, inputdata.pCaller, (USE_TYPE)inputdata.nOutputID, 0 );
+	Use( inputdata.pActivator, inputdata.pCaller, (USE_TYPE)inputdata.nOutputID, inputdata.value.Float() );
 }
 
 

@@ -123,6 +123,13 @@ namespace vgui2
 #define BASECOMBATWEAPON_DERIVED_FROM		CBaseAnimating
 #endif 
 
+enum
+{
+	RELOAD_START = 0,
+	RELOAD_LOOP,
+	RELOAD_FINISH,
+};
+
 //-----------------------------------------------------------------------------
 // Collect trace attacks for weapons that fire multiple projectiles per attack that also penetrate
 //-----------------------------------------------------------------------------
@@ -225,6 +232,9 @@ public:
 	bool					UsesSecondaryAmmo( void );					// returns true if the weapon actually uses secondary ammo
 	void					GiveDefaultAmmo( void );
 	
+	virtual	bool			CanDualWield( void ) { return true; };
+	bool					IsSecondary( void );
+
 	virtual bool			CanHolster( void ) const { return TRUE; };		// returns true if the weapon can be holstered
 	virtual bool			DefaultDeploy( char *szViewModel, char *szWeaponModel, int iActivity, char *szAnimExt );
 	virtual bool			CanDeploy( void ) { return true; }			// return true if the weapon's allowed to deploy
@@ -268,7 +278,7 @@ public:
 	virtual void			AbortReload( void );
 	virtual bool			Reload( void );
 	bool					DefaultReload( int iClipSize1, int iClipSize2, int iActivity );
-	bool					ReloadsSingly( void ) const;
+	bool					ReloadsSingly( void );
 
 	virtual bool			AutoFiresFullClip( void ) const { return false; }
 	virtual void			UpdateAutoFire( void );
@@ -276,6 +286,8 @@ public:
 	// Weapon firing
 	virtual void			PrimaryAttack( void );						// do "+ATTACK"
 	virtual void			SecondaryAttack( void ) { return; }			// do "+ATTACK2"
+
+	virtual CBaseEntity		*FireProjectile();
 
 	// Firing animations
 	virtual Activity		GetPrimaryAttackActivity( void );
@@ -297,6 +309,16 @@ public:
 	virtual void			WeaponSound( WeaponSound_t sound_type, float soundtime = 0.0f );
 	virtual void			StopWeaponSound( WeaponSound_t sound_type );
 	virtual const WeaponProficiencyInfo_t *GetProficiencyValues();
+
+	virtual bool			HasIronsights( void );
+	bool					IsIronsighted( void );
+	void					EnableIronsights( void );
+	void					DisableIronsights( void );
+	void					SetIronsightPercent( void );
+	float					GetIronsightPercent( void );
+
+	Vector					GetIronsightPositionOffset( void ) const;
+	Vector					GetFanningPositionOffset( void ) const;
 
 	// Autoaim
 	virtual float			GetMaxAutoAimDeflection() { return 0.99f; }
@@ -530,6 +552,8 @@ public:
 	virtual void			HideThink( void );
 	virtual bool			CanReload( void );
 
+	virtual void			ResetViewmodelAnimation();
+
 	virtual float			GetNextSecondaryAttackDelay( void ) { return 0.5f; } // This is for setting the next attack timer from inside SecondaryAttack()
 
 	void SetClip1( int nClip )
@@ -579,9 +603,15 @@ public:
 	CNetworkVar( int, m_nViewModelIndex );
 
 	// Weapon firing
+	CNetworkVar( float, m_flNextAttackStart );									// soonest time ItemPostFrame will call PrimaryAttack
+
+	// Weapon firing
 	CNetworkVar( float, m_flNextPrimaryAttack );						// soonest time ItemPostFrame will call PrimaryAttack
 	CNetworkVar( float, m_flNextSecondaryAttack );					// soonest time ItemPostFrame will call SecondaryAttack
 	CNetworkVar( float, m_flTimeWeaponIdle );							// soonest time ItemPostFrame will call WeaponIdle
+
+	CNetworkVar( float, m_flNextReloadTime );					// soonest time ItemPostFrame will call SecondaryAttack
+	CNetworkVar( float, m_iReloadMode );					// soonest time ItemPostFrame will call SecondaryAttack
 	// Weapon state
 	bool					m_bInReload;			// Are we in the middle of a reload;
 	bool					m_bFireOnEmpty;			// True when the gun is empty and the player is still holding down the attack key(s)
@@ -636,7 +666,6 @@ public:
 	float					m_fMinRange2;			// What's the closest this weapon can be used?
 	float					m_fMaxRange1;			// What's the furthest this weapon can be used?
 	float					m_fMaxRange2;			// What's the furthest this weapon can be used?
-	bool					m_bReloadsSingly;		// True if this weapon reloads 1 round at a time
 	float					m_fFireDuration;		// The amount of time that the weapon has sustained firing
 	int						m_iSubType;
 
@@ -644,6 +673,9 @@ public:
 	EHANDLE					m_hLocker;				// Who locked this weapon.
 
 	CNetworkVar( bool, m_bFlipViewModel );
+
+	CNetworkVar( bool, m_bIsIronsighted );
+	CNetworkVar( float, m_flIronsightPercent );
 
 	IPhysicsConstraint		*GetConstraint() { return m_pConstraint; }
 

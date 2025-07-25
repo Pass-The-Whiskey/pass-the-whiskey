@@ -39,6 +39,7 @@ public:
 	CNetworkVar( float, m_flSpread );
 	CNetworkVar( bool, m_bDoImpacts );
 	CNetworkVar( bool, m_bDoTracers );
+	CNetworkVar( bool, m_bLeftHand );
 };
 
 //-----------------------------------------------------------------------------
@@ -67,6 +68,7 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE(CTEHL2MPFireBullets, DT_TEHL2MPFireBullets)
 	SendPropFloat( SENDINFO( m_flSpread ), 10, 0, 0, 1 ),	
 	SendPropBool( SENDINFO( m_bDoImpacts ) ),
 	SendPropBool( SENDINFO( m_bDoTracers ) ),
+	SendPropBool( SENDINFO( m_bLeftHand ) ),
 END_SEND_TABLE()
 
 
@@ -83,7 +85,8 @@ void TE_HL2MPFireBullets(
 	int iShots,
 	float flSpread,
 	bool bDoTracers,
-	bool bDoImpacts )
+	bool bDoImpacts,
+	bool bLeftHand )
 {
 	CPASFilter filter( vOrigin );
 	filter.UsePredictionRules();
@@ -97,6 +100,7 @@ void TE_HL2MPFireBullets(
 	g_TEHL2MPFireBullets.m_iAmmoID = iAmmoID;
 	g_TEHL2MPFireBullets.m_bDoTracers = bDoTracers;
 	g_TEHL2MPFireBullets.m_bDoImpacts = bDoImpacts;
+	g_TEHL2MPFireBullets.m_bLeftHand = bLeftHand;
 	
 	Assert( iSeed < (1 << NUM_BULLET_SEED_BITS) );
 	

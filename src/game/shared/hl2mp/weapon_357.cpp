@@ -82,7 +82,6 @@ IMPLEMENT_ACTTABLE( CWeapon357 );
 //-----------------------------------------------------------------------------
 CWeapon357::CWeapon357( void )
 {
-	m_bReloadsSingly	= false;
 	m_bFiresUnderwater	= false;
 }
 

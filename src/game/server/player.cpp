@@ -1456,9 +1456,7 @@ void CBasePlayer::OnDamagedByExplosion( const CTakeDamageInfo &info )
 	if ( !shock && !ear_ringing )
 		return;
 
-	int effect = shock ? 
-		random->RandomInt( 35, 37 ) : 
-		random->RandomInt( 32, 34 );
+	int effect =  random->RandomInt( 32, 34 );
 
 	CSingleUserRecipientFilter user( this );
 	enginesound->SetPlayerDSP( user, effect, false );
@@ -5129,7 +5127,8 @@ void CBasePlayer::Spawn( void )
 	CSingleUserRecipientFilter user( this );
 	enginesound->SetPlayerDSP( user, 0, false );
 
-	CreateViewModel();
+	CreateViewModel( 0 );
+	CreateViewModel( 1 );
 
 	SetCollisionGroup( COLLISION_GROUP_PLAYER );
 
@@ -5839,10 +5838,6 @@ void CBloodSplat::Think( void )
 //-----------------------------------------------------------------------------
 CBaseEntity	*CBasePlayer::GiveNamedItem( const char *pszName, int iSubType )
 {
-	// If I already own this type don't create one
-	if ( Weapon_OwnsThisType(pszName, iSubType) )
-		return NULL;
-
 	// Msg( "giving %s\n", pszName );
 
 	EHANDLE pent;
@@ -8176,6 +8171,7 @@ void CMovementSpeedMod::InputSpeedMod(inputdata_t &data)
 		SendPropEHandle(SENDINFO(m_hVehicle)),
 		SendPropEHandle(SENDINFO(m_hUseEntity)),
 		SendPropInt		(SENDINFO(m_iHealth), -1, SPROP_VARINT | SPROP_CHANGES_OFTEN ),
+		SendPropInt		(SENDINFO(m_iMaxHealth), -1, SPROP_VARINT | SPROP_CHANGES_OFTEN ),
 		SendPropInt		(SENDINFO(m_lifeState), 3, SPROP_UNSIGNED ),
 		SendPropInt		(SENDINFO(m_iBonusProgress), 15 ),
 		SendPropInt		(SENDINFO(m_iBonusChallenge), 4 ),

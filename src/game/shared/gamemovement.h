@@ -21,7 +21,7 @@
 
 #define GAMEMOVEMENT_DUCK_TIME				1000.0f		// ms
 #define GAMEMOVEMENT_JUMP_TIME				510.0f		// ms approx - based on the 21 unit height jump
-#define GAMEMOVEMENT_JUMP_HEIGHT			21.0f		// units
+#define GAMEMOVEMENT_JUMP_HEIGHT			44.0f		// units
 #define GAMEMOVEMENT_TIME_TO_UNDUCK			( TIME_TO_UNDUCK * 1000.0f )		// ms
 #define GAMEMOVEMENT_TIME_TO_UNDUCK_INV		( GAMEMOVEMENT_DUCK_TIME - GAMEMOVEMENT_TIME_TO_UNDUCK )
 
@@ -29,7 +29,8 @@ enum
 {
 	SPEED_CROPPED_RESET = 0,
 	SPEED_CROPPED_DUCK = 1,
-	SPEED_CROPPED_WEAPON = 2,
+	SPEED_CROPPED_RELOAD = 2,
+	SPEED_CROPPED_IRONSIGHT = 3,
 };
 
 struct surfacedata_t;
@@ -152,6 +153,7 @@ protected:
 
 	// Returns true if he started a jump (ie: should he play the jump animation)?
 	virtual bool	CheckJumpButton( void );	// Overridden by each game.
+	virtual void	PreventBunnyJumping( void );	// Overridden by each game.
 
 	// Dead player flying through air., e.g.
 	virtual void    FullTossMove( void );
@@ -217,6 +219,8 @@ protected:
 
 	// Ducking
 	virtual void	Duck( void );
+	virtual void	HandleReloadingSpeedCrop();
+	virtual void	HandleIronsightSpeedCrop();
 	virtual void	HandleDuckingSpeedCrop();
 	virtual void	FinishUnDuck( void );
 	virtual void	FinishDuck( void );

@@ -107,6 +107,7 @@ BEGIN_DATADESC( CBaseCombatCharacter )
 	DEFINE_AUTO_ARRAY( m_iAmmo, FIELD_INTEGER ),
 	DEFINE_AUTO_ARRAY( m_hMyWeapons, FIELD_EHANDLE ),
 	DEFINE_FIELD( m_hActiveWeapon, FIELD_EHANDLE ),
+	DEFINE_FIELD( m_hActiveWeapon2, FIELD_EHANDLE ),
 	DEFINE_FIELD( m_bForceServerRagdoll, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bPreventWeaponPickup, FIELD_BOOLEAN ),
 
@@ -194,13 +195,11 @@ END_SEND_TABLE();
 // This table encodes the CBaseCombatCharacter
 //-----------------------------------------------------------------------------
 IMPLEMENT_SERVERCLASS_ST(CBaseCombatCharacter, DT_BaseCombatCharacter)
-#ifdef GLOWS_ENABLE
-	SendPropBool( SENDINFO( m_bGlowEnabled ) ),
-#endif // GLOWS_ENABLE
 	// Data that only gets sent to the local player.
 	SendPropDataTable( "bcc_localdata", 0, &REFERENCE_SEND_TABLE(DT_BCCLocalPlayerExclusive), SendProxy_SendBaseCombatCharacterLocalDataTable ),
 
 	SendPropEHandle( SENDINFO( m_hActiveWeapon ) ),
+	SendPropEHandle( SENDINFO( m_hActiveWeapon2 ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_hMyWeapons), SendPropEHandle( SENDINFO_ARRAY(m_hMyWeapons) ) ),
 
 #ifdef INVASION_DLL
@@ -721,6 +720,7 @@ CBaseCombatCharacter::CBaseCombatCharacter( void )
 
 	// Init weapon and Ammo data
 	m_hActiveWeapon			= NULL;
+	m_hActiveWeapon2		= NULL;
 
 	// reset all ammo values to 0
 	RemoveAllAmmo();
@@ -747,10 +747,6 @@ CBaseCombatCharacter::CBaseCombatCharacter( void )
 	m_impactEnergyScale = 1.0f;
 
 	m_bForceServerRagdoll = ai_force_serverside_ragdoll.GetBool();
-
-#ifdef GLOWS_ENABLE
-	m_bGlowEnabled.Set( false );
-#endif // GLOWS_ENABLE
 }
 
 //------------------------------------------------------------------------------
@@ -854,10 +850,6 @@ void CBaseCombatCharacter::UpdateOnRemove( void )
 		pOwner->DeathNotice( this );
 		SetOwnerEntity( NULL );
 	}
-
-#ifdef GLOWS_ENABLE
-	RemoveGlowEffect();
-#endif // GLOWS_ENABLE
 
 	// Chain at end to mimic destructor unwind order
 	BaseClass::UpdateOnRemove();
@@ -1680,10 +1672,6 @@ void CBaseCombatCharacter::Event_Killed( const CTakeDamageInfo &info )
 	// inform bots
 	TheNextBots().OnKilled( this, info );
 #endif
-
-#ifdef GLOWS_ENABLE
-	RemoveGlowEffect();
-#endif // GLOWS_ENABLE
 }
 
 void CBaseCombatCharacter::Event_Dying( const CTakeDamageInfo &info )
@@ -1716,6 +1704,10 @@ bool CBaseCombatCharacter::Weapon_Detach( CBaseCombatWeapon *pWeapon )
 
 			if ( pWeapon == m_hActiveWeapon )
 				ClearActiveWeapon();
+
+			if ( pWeapon == m_hActiveWeapon2 )
+				ClearActiveWeapon();
+
 			return true;
 		}
 	}
@@ -1845,6 +1837,7 @@ void CBaseCombatCharacter::Weapon_DropAll( bool bDisallowWeaponPickup )
 		CollisionProp()->OBBSize().y * CollisionProp()->OBBSize().y );
 
 	CBaseCombatWeapon *pActiveWeapon = GetActiveWeapon();
+	CBaseCombatWeapon *pActiveWeapon2 = GetActiveWeapon();
 	for (int i=0; i<MAX_WEAPONS; ++i) 
 	{
 		CBaseCombatWeapon *pWeapon = m_hMyWeapons[i];
@@ -1853,6 +1846,9 @@ void CBaseCombatCharacter::Weapon_DropAll( bool bDisallowWeaponPickup )
 
 		// Have to drop this after we've dropped everything else, so autoswitch doesn't happen
 		if ( pWeapon == pActiveWeapon )
+			continue;
+
+		if ( pWeapon == pActiveWeapon2 )
 			continue;
 
 		DropWeaponForWeaponStrip( pWeapon, vecForward, gunAngles, flDiameter );
@@ -1894,6 +1890,29 @@ void CBaseCombatCharacter::Weapon_DropAll( bool bDisallowWeaponPickup )
 		if ( bDisallowWeaponPickup )
 		{
 			pActiveWeapon->RemoveSolidFlags( FSOLID_TRIGGER );
+		}
+	}
+
+	// Drop the active weapon normally...
+	if ( pActiveWeapon2 )
+	{
+		// Nowhere in particular; just drop it.
+		Vector vecThrow;
+		ThrowDirForWeaponStrip( pActiveWeapon2, vecForward, &vecThrow );
+
+		// Throw a little more vigorously; it starts closer to the player
+		vecThrow *= random->RandomFloat( 800.0f, 1000.0f );
+
+		Weapon_Drop( pActiveWeapon2, NULL, &vecThrow );
+		pActiveWeapon2->SetRemoveable( false );
+
+		// HACK: This hack is required to allow weapons to be disintegrated
+		// in the citadel weapon-strip scene
+		// Make them not pick-uppable again. This also has the effect of allowing weapons
+		// to collide with triggers. 
+		if ( bDisallowWeaponPickup )
+		{
+			pActiveWeapon2->RemoveSolidFlags( FSOLID_TRIGGER );
 		}
 	}
 }
@@ -2064,6 +2083,10 @@ void CBaseCombatCharacter::SetLightingOriginRelative( CBaseEntity *pLightingOrig
 	if ( GetActiveWeapon() )
 	{
 		GetActiveWeapon()->SetLightingOriginRelative( pLightingOrigin );
+	}
+	if ( GetActiveWeapon2() )
+	{
+		GetActiveWeapon2()->SetLightingOriginRelative( pLightingOrigin );
 	}
 }
 
@@ -2593,6 +2616,9 @@ void CBaseCombatCharacter::SetTransmit( CCheckTransmitInfo *pInfo, bool bAlways 
 		// UpdateTransmitState all weapons with owners will transmit to clients in the PVS.
 		if ( m_hActiveWeapon && !m_hActiveWeapon->IsEffectActive( EF_NODRAW ) )
 			m_hActiveWeapon->SetTransmit( pInfo, bAlways );
+
+		if ( m_hActiveWeapon2 && !m_hActiveWeapon2->IsEffectActive( EF_NODRAW ) )
+			m_hActiveWeapon2->SetTransmit( pInfo, bAlways );
 	}
 }
 
@@ -3240,6 +3266,20 @@ void CBaseCombatCharacter::SetActiveWeapon( CBaseCombatWeapon *pNewWeapon )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Change active weapon and notify derived classes
+//			
+//-----------------------------------------------------------------------------
+void CBaseCombatCharacter::SetActiveWeapon2( CBaseCombatWeapon *pNewWeapon )
+{
+	CBaseCombatWeapon *pOldWeapon = m_hActiveWeapon2;
+	if ( pNewWeapon != pOldWeapon )
+	{
+		m_hActiveWeapon2 = pNewWeapon;
+		OnChangeActiveWeapon( pOldWeapon, pNewWeapon );
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Consider the weapon's built-in accuracy, this character's proficiency with
 // the weapon, and the status of the target. Use this information to determine
 // how accurately to shoot at the target.
@@ -3258,33 +3298,6 @@ float CBaseCombatCharacter::GetSpreadBias( CBaseCombatWeapon *pWeapon, CBaseEnti
 		return pWeapon->GetSpreadBias(GetCurrentWeaponProficiency());
 	return 1.0;
 }
-
-#ifdef GLOWS_ENABLE
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseCombatCharacter::AddGlowEffect( void )
-{
-	SetTransmitState( FL_EDICT_ALWAYS );
-	m_bGlowEnabled.Set( true );
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseCombatCharacter::RemoveGlowEffect( void )
-{
-	m_bGlowEnabled.Set( false );
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-bool CBaseCombatCharacter::IsGlowEffectActive( void )
-{
-	return m_bGlowEnabled;
-}
-#endif // GLOWS_ENABLE
 
 //-----------------------------------------------------------------------------
 // Assume everyone is average with every weapon. Override this to make exceptions.
@@ -3351,24 +3364,6 @@ bool CBaseCombatCharacter::ShouldShootMissTarget( CBaseCombatCharacter *pAttacke
 void CBaseCombatCharacter::InputKilledNPC( inputdata_t &inputdata )
 {
 	OnKilledNPC( inputdata.pActivator ? inputdata.pActivator->MyCombatCharacterPointer() : NULL );
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Overload our muzzle flash and send it to any actively held weapon
-//-----------------------------------------------------------------------------
-void CBaseCombatCharacter::DoMuzzleFlash()
-{
-	// Our weapon takes our muzzle flash command
-	CBaseCombatWeapon *pWeapon = GetActiveWeapon();
-	if ( pWeapon )
-	{
-		pWeapon->DoMuzzleFlash();
-		//NOTENOTE: We do not chain to the base here
-	}
-	else
-	{
-		BaseClass::DoMuzzleFlash();
-	}
 }
 
 //-----------------------------------------------------------------------------
@@ -3550,10 +3545,6 @@ void CBaseCombatCharacter::ChangeTeam( int iTeamNum )
 {
 	// old team member no longer in the nav mesh
 	ClearLastKnownArea();
-
-#ifdef GLOWS_ENABLE
-	RemoveGlowEffect();
-#endif // GLOWS_ENABLE
 
 	BaseClass::ChangeTeam( iTeamNum );
 }

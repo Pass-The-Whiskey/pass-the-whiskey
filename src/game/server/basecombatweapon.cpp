@@ -434,7 +434,7 @@ int CBaseCombatWeapon::WeaponRangeAttack2Condition( float flDot, float flDist )
 	// currently disabled
 	return COND_NONE;
 
-	if ( m_bReloadsSingly )
+	if ( ReloadsSingly() )
 	{
 		if (m_iClip2 <=0)
 		{

@@ -1096,6 +1096,13 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 
 	C_BaseAnimating::InitBoneSetupThreadPool();
 
+	g_pVGuiLocalize->AddFile( "resource/hl2_%language%.txt" );
+	g_pVGuiLocalize->AddFile( "resource/hl2mp_%language%.txt" );
+
+	g_pVGuiLocalize->AddFile( "resource/fof_%language%.txt" );
+
+	g_pVGuiLocalize->AddFile( "resource/ptw_%language%.txt" );
+
 #if defined( WIN32 ) && !defined( _X360 )
 	// NVNT connect haptics sytem
 	ConnectHaptics(appSystemFactory);

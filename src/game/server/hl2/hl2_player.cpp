@@ -84,7 +84,7 @@ extern int gEvilImpulse101;
 ConVar sv_autojump( "sv_autojump", "0" );
 
 ConVar hl2_walkspeed( "hl2_walkspeed", "150", FCVAR_REPLICATED );
-ConVar hl2_normspeed( "hl2_normspeed", "190", FCVAR_REPLICATED );
+ConVar hl2_normspeed( "hl2_normspeed", "235", FCVAR_REPLICATED );
 ConVar hl2_sprintspeed( "hl2_sprintspeed", "320", FCVAR_REPLICATED );
 
 #define	HL2_WALK_SPEED hl2_walkspeed.GetFloat()
@@ -2893,8 +2893,12 @@ void CHL2_Player::PlayerUse ( void )
 		if ( ( (m_nButtons & IN_USE) && (caps & FCAP_CONTINUOUS_USE) ) ||
 			 ( (m_afButtonPressed & IN_USE) && (caps & (FCAP_IMPULSE_USE|FCAP_ONOFF_USE)) ) )
 		{
-			if ( caps & FCAP_CONTINUOUS_USE )
+			if ( caps & FCAP_CONTINUOUS_USE ) {
+				m_flUseTime += gpGlobals->frametime;
 				m_afPhysicsFlags |= PFLAG_USING;
+
+				emptyVariant.SetFloat(m_flUseTime);
+			}
 
 			pUseEntity->AcceptInput( "Use", this, this, emptyVariant, USE_TOGGLE );
 
@@ -2907,8 +2911,6 @@ void CHL2_Player::PlayerUse ( void )
 
 			usedSomething = true;
 		}
-
-#if	HL2_SINGLE_PRIMARY_WEAPON_MODE
 
 		//Check for weapon pick-up
 		if ( m_afButtonPressed & IN_USE )
@@ -2931,7 +2933,6 @@ void CHL2_Player::PlayerUse ( void )
 				usedSomething = true;
 			}
 		}
-#endif
 	}
 	else if ( m_afButtonPressed & IN_USE )
 	{
@@ -2946,6 +2947,10 @@ void CHL2_Player::PlayerUse ( void )
 	{
 		m_Local.m_nOldButtons |= IN_USE;
 		m_afButtonPressed &= ~IN_USE;
+	}
+	else
+	{
+		m_flUseTime = 0;
 	}
 }
 

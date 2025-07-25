@@ -34,7 +34,8 @@ const char *pWeaponSoundCategories[ NUM_SHOOT_SOUND_TYPES ] =
 	"special2",
 	"special3",
 	"taunt",
-	"deploy"
+	"deploy",
+	"prime"
 };
 #else
 extern const char *pWeaponSoundCategories[ NUM_SHOOT_SOUND_TYPES ];
@@ -347,6 +348,14 @@ FileWeaponInfo_t::FileWeaponInfo_t()
 	bShowUsageHint = false;
 	m_bAllowFlipping = true;
 	m_bBuiltRightHanded = true;
+
+	m_bHasIronsights = false;
+
+	m_iIndicatorType = 0;
+
+	m_bInvertRotation = false;
+	m_iCylinderRadius = 18;
+	m_iBulletRadius = 8;
 }
 
 #ifdef CLIENT_DLL
@@ -459,6 +468,89 @@ void FileWeaponInfo_t::Parse( KeyValues *pKeyValuesData, const char *szWeaponNam
 				Q_strncpy( aShootSounds[i], soundname, MAX_WEAPON_STRING );
 			}
 		}
+	}
+
+	m_nDamage = pKeyValuesData->GetInt("Damage", 0);
+	m_nDamageArmor = pKeyValuesData->GetInt("DamageArmor", 0);
+	
+	m_nAmmoPerShot = pKeyValuesData->GetInt("AmmoPerShot", 1);
+	m_nBulletsPerShot = pKeyValuesData->GetInt("BulletsPerShot", 1);
+	
+	m_flRange = pKeyValuesData->GetFloat("Range", 8192.0f);	
+	m_flPunchAngle = pKeyValuesData->GetFloat("PunchAngle", 0);
+	
+	m_flTimeToFireDelay = pKeyValuesData->GetFloat("TimeToFireDelay", 0);
+	m_flTimeFireDelay = pKeyValuesData->GetFloat("TimeFireDelay", 1.0);
+	m_flTimeMissFireDelay = pKeyValuesData->GetFloat("TimeMissFireDelay", 1.0);
+	m_flTimeThrowDelay = pKeyValuesData->GetFloat("TimeThrowDelay", 1.0);
+	
+	m_flTimeIdle = pKeyValuesData->GetFloat("TimeIdle", 0);
+	m_flTimeIdleEmpty = pKeyValuesData->GetFloat("TimeIdleEmpty", 0);
+	
+	m_flTimeReloadStart = pKeyValuesData->GetFloat("TimeReloadStart", 0);
+	m_flTimeReload = pKeyValuesData->GetFloat("TimeReload", 0);
+	
+	m_bDrawCrosshair = pKeyValuesData->GetInt("DrawCrosshair", 1) > 0;
+	
+	/*
+	m_iProjectile = PROJECTILE_NONE; // GTODO
+
+	const char *pszProjectileType = pKeyValuesData->GetString( "ProjectileType", "projectile_none" );
+
+	for ( int i = 0; i < TF_NUM_PROJECTILES; i++ )
+	{
+		if ( FStrEq( pszProjectileType, g_szProjectileNames[i] ) )
+		{
+			m_iProjectile = i;
+			break;
+		}
+	}	 
+	*/
+
+	m_flProjectileSpeed = pKeyValuesData->GetFloat( "ProjectileSpeed", 0.0f );
+	m_flProjectileGravity = pKeyValuesData->GetFloat( "ProjectileGravity", 0.0f );
+
+	m_flMaxSpeed = pKeyValuesData->GetFloat( "MaxSpeed", 220.0 );
+
+	m_bMeleeWeapon = pKeyValuesData->GetInt( "MeleeWeapon", 1 ) > 0;
+	m_flPrimarySmackDelay = pKeyValuesData->GetFloat( "PrimarySmackDelay", 0.0 );
+	m_flSecondarySmackDelay = pKeyValuesData->GetFloat( "SecondarySmackDelay", m_flPrimarySmackDelay );
+
+	m_bReloadsSingly = ( pKeyValuesData->GetInt( "ReloadsSingly", 0 ) > 0 );
+		
+	KeyValues *pSights = pKeyValuesData->FindKey( "ExpOffset" );
+	if (pSights)
+	{
+		m_vecIronsightPosOffset.x			= pSights->GetFloat( "x", 0.0f );
+		m_vecIronsightPosOffset.y			= pSights->GetFloat( "y", 0.0f );
+		m_vecIronsightPosOffset.z			= pSights->GetFloat( "z", 0.0f );
+
+		m_vecFanningPosOffset.x				= pSights->GetFloat( "xf", m_vecIronsightPosOffset.x );
+		m_vecFanningPosOffset.y				= pSights->GetFloat( "yf", m_vecIronsightPosOffset.y );
+		m_vecFanningPosOffset.z				= pSights->GetFloat( "zf", m_vecIronsightPosOffset.z );
+
+		m_bHasIronsights = true;
+	}
+
+	KeyValues *pSpread = pKeyValuesData->FindKey( "Spread" );
+	if (pSpread)
+	{
+		m_flSpreadCrouch					= pSpread->GetFloat( "crouch", 0.0f );
+		m_flSpreadIdle						= pSpread->GetFloat( "idle", 0.0f );
+		m_flSpreadWalk						= pSpread->GetFloat( "walk", 0.0f );
+		m_flSpreadRun						= pSpread->GetFloat( "run", 0.0f );
+		m_flSpreadJump						= pSpread->GetFloat( "jump", 0.0f );
+		m_flSpreadSpeed						= pSpread->GetFloat( "speed", 0.0f );
+	}
+
+	KeyValues *pAmmoInfo = pKeyValuesData->FindKey( "AmmoInfo" );
+	if (pAmmoInfo)
+	{
+		m_iIndicatorType = pAmmoInfo->GetInt("IndicatorType", 0);
+
+		m_bInvertRotation = pAmmoInfo->GetInt("InvertRotation", 1) > 0;
+		m_iCylinderRadius = pAmmoInfo->GetInt("CylinderRadius", 18);
+		m_iBulletRadius = pAmmoInfo->GetInt("BulletRadius", 8);
 	}
 }
 

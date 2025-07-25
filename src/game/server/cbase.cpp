@@ -1413,6 +1413,24 @@ bool variant_t::Convert( fieldtype_t newType )
 
 	switch ( fieldType )
 	{
+		case FIELD_VOID:
+		{
+			switch ( newType )
+			{
+				case FIELD_FLOAT:
+				{
+					SetFloat( 0.0 );
+					return true;
+				}
+
+				case FIELD_BOOLEAN:
+				{
+					SetBool( false );
+					return true;
+				}
+			}
+			break;
+		}
 		case FIELD_INTEGER:
 		{
 			switch ( newType )

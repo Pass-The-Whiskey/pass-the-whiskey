@@ -43,6 +43,7 @@ namespace vgui
 		int m_iCornerHeight;	// output size of the corner height in pixels
 		int m_iCornerWidth;		// same for width
 
+	public:
 		int m_iTextureID;
 
 		float m_flCornerWidthPercent;	// corner width as percentage of image width

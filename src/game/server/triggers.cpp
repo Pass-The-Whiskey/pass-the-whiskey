@@ -665,7 +665,9 @@ BEGIN_DATADESC( CTriggerHurt )
 	DEFINE_KEYFIELD( m_flDamageCap, FIELD_FLOAT, "damagecap" ),
 	DEFINE_KEYFIELD( m_bitsDamageInflict, FIELD_INTEGER, "damagetype" ),
 	DEFINE_KEYFIELD( m_damageModel, FIELD_INTEGER, "damagemodel" ),
+	DEFINE_KEYFIELD( m_iTeamFilter, FIELD_INTEGER, "teamfilter" ),
 	DEFINE_KEYFIELD( m_bNoDmgForce, FIELD_BOOLEAN, "nodmgforce" ),
+	DEFINE_KEYFIELD( m_bOnlyKicked, FIELD_BOOLEAN, "onlykicked" ),
 
 	DEFINE_FIELD( m_flLastDmgTime, FIELD_TIME ),
 	DEFINE_FIELD( m_flDmgResetTime, FIELD_TIME ),
@@ -682,6 +684,7 @@ END_DATADESC()
 
 
 LINK_ENTITY_TO_CLASS( trigger_hurt, CTriggerHurt );
+LINK_ENTITY_TO_CLASS( trigger_hurt_fof, CTriggerHurt );
 
 IMPLEMENT_AUTO_LIST( ITriggerHurtAutoList );
 
@@ -744,6 +747,9 @@ void CTriggerHurt::RadiationThink( void )
 bool CTriggerHurt::HurtEntity( CBaseEntity *pOther, float damage )
 {
 	if ( !pOther->m_takedamage || !PassesTriggerFilters(pOther) )
+		return false;
+
+	if ( m_iTeamFilter && pOther->GetTeamNumber() != m_iTeamFilter )
 		return false;
 
 	// If player is disconnected, we're probably in this routine via the
@@ -1612,8 +1618,8 @@ void CChangeLevel::ChangeLevelNow( CBaseEntity *pActivator )
 	Assert(!FStrEq(m_szMapName, ""));
 
 	// Don't work in deathmatch
-	if ( g_pGameRules->IsDeathmatch() )
-		return;
+	//if ( g_pGameRules->IsDeathmatch() )
+	//	return;
 
 	// Some people are firing these multiple times in a frame, disable
 	if ( m_bTouched )
@@ -1682,11 +1688,7 @@ void CChangeLevel::ChangeLevelNow( CBaseEntity *pActivator )
 	}
 
 	// If we're debugging, don't actually change level
-	if ( g_debug_transitions.GetInt() == 0 )
-	{
-		engine->ChangeLevel( st_szNextMap, st_szNextSpot );
-	}
-	else
+	if ( g_debug_transitions.GetBool() )
 	{
 		// Build a change list so we can see what would be transitioning
 		CSaveRestoreData *pSaveData = SaveInit( 0 );
@@ -1697,7 +1699,7 @@ void CChangeLevel::ChangeLevelNow( CBaseEntity *pActivator )
 			g_pGameSaveRestoreBlockSet->PostSave();
 		}
 
-		SetTouch( NULL );
+		engine->ChangeLevel( st_szNextMap, NULL );
 	}
 }
 

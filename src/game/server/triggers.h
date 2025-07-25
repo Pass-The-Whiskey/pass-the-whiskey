@@ -188,6 +188,8 @@ public:
 	{
 		// This field came along after levels were built so the field defaults to 20 here in the constructor.
 		m_flDamageCap = 20.0f;
+		m_iTeamFilter = TEAM_UNASSIGNED;
+		m_bOnlyKicked = false;
 	}
 
 	DECLARE_CLASS( CTriggerHurt, CTriggerHurtShim );
@@ -209,7 +211,9 @@ public:
 	float	m_flDmgResetTime;	// For forgiveness, the time to reset the counter that accumulates damage.
 	int		m_bitsDamageInflict;	// DMG_ damage type that the door or tigger does
 	int		m_damageModel;
+	int		m_iTeamFilter;
 	bool	m_bNoDmgForce;		// Should damage from this trigger impart force on what it's hurting
+	bool	m_bOnlyKicked;		// Should damage from this trigger impart force on what it's hurting
 
 	enum
 	{

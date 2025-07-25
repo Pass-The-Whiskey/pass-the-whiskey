@@ -33,11 +33,11 @@ extern int Bot_GetTeamByName( const char *string );
 
 inline int GetEnemyTeam( int team )
 {
-	if ( team == TEAM_COMBINE )
-		return TEAM_REBELS;
+	if ( team == TEAM_VIGILANTES )
+		return TEAM_DESPERADOS;
 
-	if ( team == TEAM_REBELS )
-		return TEAM_COMBINE;
+	if ( team == TEAM_DESPERADOS )
+		return TEAM_VIGILANTES;
 
 	// no enemy team
 	return team;
@@ -883,7 +883,7 @@ public:
 		if ( !player->IsAlive() )
 			return true;
 
-		if ( player->GetTeamNumber() != TEAM_REBELS && player->GetTeamNumber() != TEAM_COMBINE && player->GetTeamNumber() != TEAM_UNASSIGNED )
+		if ( player->GetTeamNumber() != TEAM_DESPERADOS && player->GetTeamNumber() != TEAM_VIGILANTES && player->GetTeamNumber() != TEAM_UNASSIGNED )
 			return true;
 
 		if ( m_team != TEAM_ANY && player->GetTeamNumber() != m_team )

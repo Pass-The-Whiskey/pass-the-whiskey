@@ -1236,8 +1236,8 @@ private:
 public:
 	// variables promoted from edict_t
 	string_t	m_target;
-	CNetworkVarForDerived( int, m_iMaxHealth ); // CBaseEntity doesn't care about changes to this variable, but there are derived classes that do.
 	CNetworkVarForDerived( int, m_iHealth );
+	CNetworkVarForDerived( int, m_iMaxHealth ); // CBaseEntity doesn't care about changes to this variable, but there are derived classes that do.
 
 	CNetworkVarForDerived( char, m_lifeState );
 	CNetworkVarForDerived( char , m_takedamage );
@@ -1781,7 +1781,7 @@ private:
 	bool ShouldDrawUnderwaterBulletBubbles();
 
 	// Computes the tracer start position
-	void ComputeTracerStartPosition( const Vector &vecShotSrc, Vector *pVecTracerStart );
+	void ComputeTracerStartPosition( const Vector &vecShotSrc, Vector *pVecTracerStart, CBaseEntity* pWeapon = NULL );
 
 	// Computes the tracer start position
 	void CreateBubbleTrailTracer( const Vector &vecShotSrc, const Vector &vecShotEnd, const Vector &vecShotDir );

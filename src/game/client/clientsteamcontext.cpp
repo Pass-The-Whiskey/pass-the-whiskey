@@ -82,7 +82,7 @@ void CClientSteamContext::UpdateLoggedOnState()
 		// update Steam info
 		m_SteamIDLocalPlayer = SteamUser()->GetSteamID();
 		m_nUniverse = SteamUtils()->GetConnectedUniverse();
-		m_nAppID = SteamUtils()->GetAppID();
+		m_nAppID = 265630; // SteamUtils()->GetAppID();
 	}
 
 	if ( bPreviousLoggedOn != m_bLoggedOn )

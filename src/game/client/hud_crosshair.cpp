@@ -16,15 +16,6 @@
 #include "materialsystem/imaterialsystem.h"
 #include "VGuiMatSurface/IMatSystemSurface.h"
 #include "client_virtualreality.h"
-#include "sourcevr/isourcevirtualreality.h"
-
-#ifdef SIXENSE
-#include "sixense/in_sixense.h"
-#endif
-
-#ifdef PORTAL
-#include "c_portal_player.h"
-#endif // PORTAL
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -36,9 +27,7 @@ using namespace vgui;
 
 int ScreenTransform( const Vector& point, Vector& screen );
 
-#ifdef TF_CLIENT_DLL
-// If running TF, we use CHudTFCrosshair instead (which is derived from CHudCrosshair)
-#else
+#ifndef TF_CLIENT_DLL
 DECLARE_HUDELEMENT( CHudCrosshair );
 #endif
 
@@ -48,10 +37,7 @@ CHudCrosshair::CHudCrosshair( const char *pElementName ) :
 	vgui::Panel *pParent = g_pClientMode->GetViewport();
 	SetParent( pParent );
 
-	m_pCrosshair = 0;
-
 	m_clrCrosshair = Color( 0, 0, 0, 0 );
-
 	m_vecCrossHairOffsetAngle.Init();
 
 	SetHiddenBits( HIDEHUD_PLAYERDEAD | HIDEHUD_CROSSHAIR );
@@ -64,8 +50,6 @@ CHudCrosshair::~CHudCrosshair()
 void CHudCrosshair::ApplySchemeSettings( IScheme *scheme )
 {
 	BaseClass::ApplySchemeSettings( scheme );
-
-	m_pDefaultCrosshair = gHUD.GetIcon("crosshair_default");
 	SetPaintBackgroundEnabled( false );
 
     SetSize( ScreenWidth(), ScreenHeight() );
@@ -93,53 +77,27 @@ bool CHudCrosshair::ShouldDraw( void )
 	if ( pWeapon && !pWeapon->ShouldDrawCrosshair() )
 		return false;
 
-#ifdef PORTAL
-	C_Portal_Player *portalPlayer = ToPortalPlayer(pPlayer);
-	if ( portalPlayer && portalPlayer->IsSuppressingCrosshair() )
-		return false;
-#endif // PORTAL
-
-	/* disabled to avoid assuming it's an HL2 player.
-	// suppress crosshair in zoom.
-	if ( pPlayer->m_HL2Local.m_bZooming )
-		return false;
-	*/
-
 	// draw a crosshair only if alive or spectating in eye
-	if ( IsX360() )
-	{
-		bNeedsDraw = m_pCrosshair && 
-			!engine->IsDrawingLoadingImage() &&
-			!engine->IsPaused() && 
-			( !pPlayer->IsSuitEquipped() || g_pGameRules->IsMultiplayer() ) &&
-			g_pClientMode->ShouldDrawCrosshair() &&
-			!( pPlayer->GetFlags() & FL_FROZEN ) &&
-			( pPlayer->entindex() == render->GetViewEntity() ) &&
-			( pPlayer->IsAlive() ||	( pPlayer->GetObserverMode() == OBS_MODE_IN_EYE ) || ( cl_observercrosshair.GetBool() && pPlayer->GetObserverMode() == OBS_MODE_ROAMING ) );
-	}
-	else
-	{
-		bNeedsDraw = m_pCrosshair && 
-			crosshair.GetInt() &&
-			!engine->IsDrawingLoadingImage() &&
-			!engine->IsPaused() && 
-			g_pClientMode->ShouldDrawCrosshair() &&
-			!( pPlayer->GetFlags() & FL_FROZEN ) &&
-			( pPlayer->entindex() == render->GetViewEntity() ) &&
-			!pPlayer->IsInVGuiInputMode() &&
-			( pPlayer->IsAlive() ||	( pPlayer->GetObserverMode() == OBS_MODE_IN_EYE ) || ( cl_observercrosshair.GetBool() && pPlayer->GetObserverMode() == OBS_MODE_ROAMING ) );
-	}
+	bNeedsDraw = crosshair.GetInt() &&
+		!engine->IsDrawingLoadingImage() &&
+		!engine->IsPaused() && 
+		g_pClientMode->ShouldDrawCrosshair() &&
+		!( pPlayer->GetFlags() & FL_FROZEN ) &&
+		( pPlayer->entindex() == render->GetViewEntity() ) &&
+		!pPlayer->IsInVGuiInputMode() &&
+		( pPlayer->IsAlive() ||	( pPlayer->GetObserverMode() == OBS_MODE_IN_EYE ) || ( cl_observercrosshair.GetBool() && pPlayer->GetObserverMode() == OBS_MODE_ROAMING ) );
 
 	return ( bNeedsDraw && CHudElement::ShouldDraw() );
 }
 
-#ifdef TF_CLIENT_DLL
-extern ConVar cl_crosshair_red;
-extern ConVar cl_crosshair_green;
-extern ConVar cl_crosshair_blue;
-extern ConVar cl_crosshair_scale;
-#endif
+ConVar cl_crosshair_red( "cl_crosshair_red", "255", FCVAR_ARCHIVE, "", true, 0, true, 255 );
+ConVar cl_crosshair_green( "cl_crosshair_green", "255", FCVAR_ARCHIVE, "", true, 0, true, 255 );
+ConVar cl_crosshair_blue( "cl_crosshair_blue", "255", FCVAR_ARCHIVE, "", true, 0, true, 255 );
+ConVar cl_crosshair_scale( "cl_crosshair_scale", "1", FCVAR_ARCHIVE, "", true, 0, true, 255 );
 
+ConVar cl_crosshair_dot( "cl_crosshair_dot", "1", FCVAR_ARCHIVE );
+ConVar cl_crosshair_thickness( "cl_crosshair_thickness", "10", FCVAR_ARCHIVE, "", true, 1, true, 10 );
+ConVar cl_crosshair_distance( "cl_crosshair_distance", "100", FCVAR_ARCHIVE );
 
 void CHudCrosshair::GetDrawPosition ( float *pX, float *pY, bool *pbBehindCamera, QAngle angleCrosshairOffset )
 {
@@ -164,32 +122,6 @@ void CHudCrosshair::GetDrawPosition ( float *pX, float *pY, bool *pbBehindCamera
 		
 		Vector vecStart;
 		Vector vecEnd;
-
-		if ( UseVR() )
-		{
-			// These are the correct values to use, but they lag the high-speed view data...
-			vecStart = pPlayer->Weapon_ShootPosition();
-			Vector vecAimDirection = pPlayer->GetAutoaimVector( 1.0f );
-			// ...so in some aim modes, they get zapped by something completely up-to-date.
-			g_ClientVirtualReality.OverrideWeaponHudAimVectors ( &vecStart, &vecAimDirection );
-			vecEnd = vecStart + vecAimDirection * MAX_TRACE_LENGTH;
-
-			bUseOffset = true;
-		}
-
-#ifdef SIXENSE
-		// TODO: actually test this Sixsense code interaction with things like HMDs & stereo.
-        if ( g_pSixenseInput->IsEnabled() && !UseVR() )
-		{
-			// Never autoaim a predicted weapon (for now)
-			vecStart = pPlayer->Weapon_ShootPosition();
-			Vector aimVector;
-			AngleVectors( CurrentViewAngles() - g_pSixenseInput->GetViewAngleOffset(), &aimVector );
-			// calculate where the bullet would go so we can draw the cross appropriately
-			vecEnd = vecStart + aimVector * MAX_TRACE_LENGTH;
-			bUseOffset = true;
-		}
-#endif
 
 		if ( bUseOffset )
 		{
@@ -232,9 +164,6 @@ void CHudCrosshair::GetDrawPosition ( float *pX, float *pY, bool *pbBehindCamera
 
 void CHudCrosshair::Paint( void )
 {
-	if ( !m_pCrosshair )
-		return;
-
 	if ( !IsCurrentViewAccessAllowed() )
 		return;
 
@@ -242,42 +171,66 @@ void CHudCrosshair::Paint( void )
 	if ( !pPlayer )
 		return;
 
-	float x, y;
+	float flX, flY;
 	bool bBehindCamera;
-	GetDrawPosition ( &x, &y, &bBehindCamera, m_vecCrossHairOffsetAngle );
+	GetDrawPosition ( &flX, &flY, &bBehindCamera, m_vecCrossHairOffsetAngle );
+
+	int x = (int)(flX);
+	int y = (int)(flY);
 
 	if( bBehindCamera )
 		return;
 
-	float flWeaponScale = 1.f;
-	int iTextureW = m_pCrosshair->Width();
-	int iTextureH = m_pCrosshair->Height();
-	C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
-	if ( pWeapon )
-	{
-		pWeapon->GetWeaponCrosshairScale( flWeaponScale );
-	}
+	int iTextureW = cl_crosshair_thickness.GetInt() * 2;
+	int iTextureH = cl_crosshair_thickness.GetInt() * 2;
 
 	float flPlayerScale = 1.0f;
-#ifdef TF_CLIENT_DLL
 	Color clr( cl_crosshair_red.GetInt(), cl_crosshair_green.GetInt(), cl_crosshair_blue.GetInt(), 255 );
-	flPlayerScale = cl_crosshair_scale.GetFloat() / 32.0f;  // the player can change the scale in the options/multiplayer tab
-#else
-	Color clr = m_clrCrosshair;
-#endif
-	float flWidth = flWeaponScale * flPlayerScale * (float)iTextureW;
-	float flHeight = flWeaponScale * flPlayerScale * (float)iTextureH;
-	int iWidth = (int)( flWidth + 0.5f );
-	int iHeight = (int)( flHeight + 0.5f );
-	int iX = (int)( x + 0.5f );
-	int iY = (int)( y + 0.5f );
+	flPlayerScale = cl_crosshair_scale.GetFloat();  // the player can change the scale in the options/multiplayer tab
 
-	m_pCrosshair->DrawSelfCropped (
-		iX-(iWidth/2), iY-(iHeight/2),
-		0, 0,
-		iTextureW, iTextureH,
-		iWidth, iHeight,
-		clr );
+	float flWidth = flPlayerScale * iTextureW;
+	float flHeight = flPlayerScale * iTextureH;
+
+	int iDistance = cl_crosshair_distance.GetInt();
+
+	surface()->DrawSetColor(clr);
+
+	if ( cl_crosshair_dot.GetBool() )
+		surface()->DrawFilledRect(x - (flWidth / 2), y - (flHeight / 2), x + (flWidth / 2), y + (flHeight / 2));
+
+	clr[3] = (100 - iDistance);
+	surface()->DrawSetColor(clr);
+
+	surface()->DrawFilledRect(x - iDistance, y - (flHeight / 2), x - iDistance + 12, y + (flHeight / 2)); // left stem
+	surface()->DrawFilledRect(x + iDistance - 12, y - (flHeight / 2), x + iDistance, y + (flHeight / 2)); // right stem
+
+	surface()->DrawFilledRect(x - (flWidth / 2), y - iDistance, x + (flWidth / 2), y - iDistance + 12); // top stem
+	surface()->DrawFilledRect(x - (flWidth / 2), y + iDistance - 12, x + (flWidth / 2), y + iDistance); // bottom stem
+
+	surface()->DrawLine(x - iDistance, y - iDistance, x - iDistance + 12, y - iDistance + 12); // top left stem
+	surface()->DrawLine(x + iDistance - 12, y - iDistance + 12 - 1, x + iDistance, y - iDistance - 1); // top right stem
+
+	surface()->DrawLine(x - iDistance, y + iDistance - 1, x - iDistance + 12, y + iDistance - 12 - 1); // bottom left stem
+	surface()->DrawLine(x + iDistance - 12, y + iDistance - 12, x + iDistance, y + iDistance); // bottom right stem
+
+	for (int i = 1; i <= cl_crosshair_thickness.GetInt(); i++)
+	{
+		// top left stem
+		surface()->DrawLine(x - iDistance + i, y - iDistance, x - iDistance + 12, y - iDistance + 12 - i);
+		surface()->DrawLine(x - iDistance, y - iDistance + i, x - iDistance + 12 - i, y - iDistance + 12);
+
+		// top right stem
+		surface()->DrawLine(x + iDistance - 12, y - iDistance + 12 - 1 - i, x + iDistance - i, y - iDistance - 1);
+		surface()->DrawLine(x + iDistance - 12 + i, y - iDistance + 12 - 1, x + iDistance, y - iDistance - 1 + i);
+
+		// bottom left stem
+		surface()->DrawLine(x - iDistance, y + iDistance - 1 - i, x - iDistance + 12 - i, y + iDistance - 12 - 1);
+		surface()->DrawLine(x - iDistance + i, y + iDistance - 1, x - iDistance + 12, y + iDistance - 12 - 1 + i);
+
+		// bottom right stem
+		surface()->DrawLine(x + iDistance - 12 + i, y + iDistance - 12, x + iDistance, y + iDistance - i);
+		surface()->DrawLine(x + iDistance - 12, y + iDistance - 12 + i, x + iDistance - i, y + iDistance);
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -286,21 +239,4 @@ void CHudCrosshair::Paint( void )
 void CHudCrosshair::SetCrosshairAngle( const QAngle& angle )
 {
 	VectorCopy( angle, m_vecCrossHairOffsetAngle );
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CHudCrosshair::SetCrosshair( CHudTexture *texture, const Color& clr )
-{
-	m_pCrosshair = texture;
-	m_clrCrosshair = clr;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Resets the crosshair back to the default
-//-----------------------------------------------------------------------------
-void CHudCrosshair::ResetCrosshair()
-{
-	SetCrosshair( m_pDefaultCrosshair, Color(255, 255, 255, 255) );
 }

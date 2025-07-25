@@ -89,7 +89,7 @@ private:
 	CHudTexture	*m_icon_lbe;	// left bracket, empty
 };
 
-DECLARE_HUDELEMENT( CHUDQuickInfo );
+//DECLARE_HUDELEMENT( CHUDQuickInfo );
 
 CHUDQuickInfo::CHUDQuickInfo( const char *pElementName ) :
 	CHudElement( pElementName ), BaseClass( NULL, "HUDQuickInfo" )

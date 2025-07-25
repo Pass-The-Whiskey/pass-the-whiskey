@@ -339,8 +339,8 @@ void CHL2MPClientScoreBoardDialog::InitScoreboardSections()
 	if ( HL2MPRules()->IsTeamplay() )
 	{
 		// add the team sections
-		AddSection( TYPE_TEAM, TEAM_COMBINE );
-		AddSection( TYPE_TEAM, TEAM_REBELS );
+		AddSection( TYPE_TEAM, TEAM_VIGILANTES );
+		AddSection( TYPE_TEAM, TEAM_DESPERADOS );
 	}
 	else
 	{
@@ -505,9 +505,9 @@ int CHL2MPClientScoreBoardDialog::GetSectionFromTeamNumber( int teamNumber )
 {
 	switch ( teamNumber )
 	{
-	case TEAM_COMBINE:
+	case TEAM_VIGILANTES:
 		return SCORESECTION_COMBINE;
-	case TEAM_REBELS:
+	case TEAM_DESPERADOS:
 		return SCORESECTION_REBELS;
 	case TEAM_SPECTATOR:
 		return SCORESECTION_SPECTATOR;

@@ -40,28 +40,58 @@ bool CBaseCombatCharacter::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmo
 	if ( pWeapon == NULL )
 		return false;
 
-	// Already have it out?
-	if ( m_hActiveWeapon.Get() == pWeapon )
+	if (viewmodelindex != 1)
 	{
-		if ( !m_hActiveWeapon->IsWeaponVisible() || m_hActiveWeapon->IsHolstered() )
-			return m_hActiveWeapon->Deploy( );
-		return false;
-	}
-
-	if (!Weapon_CanSwitchTo(pWeapon))
-	{
-		return false;
-	}
-
-	if ( m_hActiveWeapon )
-	{
-		if ( !m_hActiveWeapon->Holster( pWeapon ) )
+		// Already have it out?
+		if ( m_hActiveWeapon.Get() == pWeapon )
+		{
+			if ( !m_hActiveWeapon->IsWeaponVisible() || m_hActiveWeapon->IsHolstered() )
+				return m_hActiveWeapon->Deploy( );
 			return false;
+		}
+
+		//if (!Weapon_CanSwitchTo(pWeapon))
+		//{
+		//	return false;
+		//}
+
+		if ( m_hActiveWeapon )
+		{
+			if ( !m_hActiveWeapon->Holster( pWeapon ) )
+				return false;
+		}
+
+		pWeapon->SetViewModelIndex( viewmodelindex );
+		m_hActiveWeapon = pWeapon;
+
+		return pWeapon->Deploy( );
 	}
+	else
+	{
+		// Already have it out?
+		if ( m_hActiveWeapon2.Get() == pWeapon )
+		{
+			if ( !m_hActiveWeapon2->IsWeaponVisible() || m_hActiveWeapon2->IsHolstered() )
+				return m_hActiveWeapon2->Deploy( );
+			return false;
+		}
 
-	m_hActiveWeapon = pWeapon;
+		//if (!Weapon_CanSwitchTo(pWeapon))
+		//{
+		//	return false;
+		//}
 
-	return pWeapon->Deploy( );
+		if ( m_hActiveWeapon2 )
+		{
+			if ( !m_hActiveWeapon2->Holster( pWeapon ) )
+				return false;
+		}
+
+		pWeapon->SetViewModelIndex( viewmodelindex );
+		m_hActiveWeapon2 = pWeapon;
+
+		return pWeapon->Deploy( );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -113,12 +143,34 @@ bool CBaseCombatCharacter::Weapon_CanSwitchTo( CBaseCombatWeapon *pWeapon )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Override base class so player can reset autoaim
+// Input  :
+// Output :
+//-----------------------------------------------------------------------------
+CBaseCombatWeapon* CBaseCombatCharacter::Weapon_GetOtherWeapon( CBaseCombatWeapon *pWeapon )
+{
+	if ( pWeapon->IsSecondary() )
+		return GetActiveWeapon();
+	else
+		return GetActiveWeapon2();
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 // Output : CBaseCombatWeapon
 //-----------------------------------------------------------------------------
 CBaseCombatWeapon *CBaseCombatCharacter::GetActiveWeapon() const
 {
 	return m_hActiveWeapon;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+// Output : CBaseCombatWeapon
+//-----------------------------------------------------------------------------
+CBaseCombatWeapon *CBaseCombatCharacter::GetActiveWeapon2() const
+{
+	return m_hActiveWeapon2;
 }
 
 //-----------------------------------------------------------------------------

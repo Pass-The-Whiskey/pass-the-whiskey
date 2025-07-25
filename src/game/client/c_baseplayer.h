@@ -106,6 +106,7 @@ public:
 
 	C_BaseViewModel		*GetViewModel( int viewmodelindex = 0, bool bObserverOK=true );
 	C_BaseCombatWeapon	*GetActiveWeapon( void ) const;
+	C_BaseCombatWeapon	*GetActiveWeapon2( void ) const;
 	const char			*GetTracerType( void );
 
 	// View model prediction setup
@@ -140,6 +141,7 @@ public:
 	// Data handlers
 	virtual bool	IsPlayer( void ) const { return true; }
 	virtual int		GetHealth() const { return m_iHealth; }
+	virtual int		GetMaxHealth() const { return m_iMaxHealth; }
 
 	int		GetBonusProgress() const { return m_iBonusProgress; }
 	int		GetBonusChallenge() const { return m_iBonusChallenge; }
@@ -193,6 +195,7 @@ public:
 	// this is a remote player, it returns the active weapon
 	// (and its appropriate left/right weapon if this is TF2).
 	virtual C_BaseAnimating*	GetRenderedWeaponModel();
+	virtual C_BaseAnimating*	GetRenderedWeaponModel2();
 
 	virtual bool				IsOverridingViewmodel( void ) { return false; };
 	virtual int					DrawOverriddenViewmodel( C_BaseViewModel *pViewmodel, int flags ) { return 0; };

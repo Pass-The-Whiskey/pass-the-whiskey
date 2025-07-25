@@ -35,7 +35,7 @@ private:
 	CHudCrosshair *m_pCrosshair;
 };
 
-DECLARE_HUDELEMENT( CHudWeapon );
+//DECLARE_HUDELEMENT( CHudWeapon );
 
 CHudWeapon::CHudWeapon( const char *pElementName ) :
   CHudElement( pElementName ), BaseClass( NULL, "HudWeapon" )
@@ -84,24 +84,24 @@ void CHudWeapon::PerformLayout()
 //-----------------------------------------------------------------------------
 void CHudWeapon::Paint( void )
 {
-	C_BasePlayer *player = C_BasePlayer::GetLocalPlayer();
+	//C_BasePlayer *player = C_BasePlayer::GetLocalPlayer();
 
-	if ( !player )
-		return;
+	//if ( !player )
+	//	return;
 
-	MDLCACHE_CRITICAL_SECTION();
+	//MDLCACHE_CRITICAL_SECTION();
 
-	C_BaseCombatWeapon *pWeapon = player->GetActiveWeapon();
-	
-	if ( pWeapon )
-	{
-		pWeapon->Redraw();
-	}
-	else
-	{
-		if ( m_pCrosshair )
-		{
-			m_pCrosshair->ResetCrosshair();
-		}
-	}
+	//C_BaseCombatWeapon *pWeapon = player->GetActiveWeapon();
+	//
+	//if ( pWeapon )
+	//{
+	//	pWeapon->Redraw();
+	//}
+	//else
+	//{
+	//	if ( m_pCrosshair )
+	//	{
+	//		m_pCrosshair->ResetCrosshair();
+	//	}
+	//}
 }

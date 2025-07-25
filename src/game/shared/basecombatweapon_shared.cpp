@@ -73,12 +73,13 @@ CBaseCombatWeapon::CBaseCombatWeapon()
 	m_fMaxRange1		= 1024;
 	m_fMaxRange2		= 1024;
 
-	m_bReloadsSingly	= false;
-
 	// Defaults to zero
 	m_nViewModelIndex	= 0;
 
 	m_bFlipViewModel	= false;
+
+	m_bIsIronsighted = false;
+	m_flIronsightPercent = 0.0f;
 
 #if defined( CLIENT_DLL )
 	m_iState = m_iOldState = WEAPON_NOT_CARRIED;
@@ -162,6 +163,16 @@ void CBaseCombatWeapon::GiveDefaultAmmo( void )
 		SetSecondaryAmmoCount( GetDefaultClip2() );
 		m_iClip2 = WEAPON_NOCLIP;
 	}
+}
+
+bool CBaseCombatWeapon::IsSecondary(void)
+{
+	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
+
+	if (pPlayer && pPlayer->GetActiveWeapon2() == this)
+		return true;
+
+	return false;
 }
 
 //-----------------------------------------------------------------------------
@@ -1586,6 +1597,18 @@ bool CBaseCombatWeapon::CanReload( void )
 	return true;
 }
 
+void CBaseCombatWeapon::ResetViewmodelAnimation(void)
+{
+	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
+	if ( !pOwner )
+		return;
+
+	CBaseViewModel *vm = pOwner->GetViewModel( m_nViewModelIndex, false );
+	
+	if ( vm  )
+		vm->m_flAnimTime = gpGlobals->curtime;
+}
+
 #if defined ( TF_CLIENT_DLL ) || defined ( TF_DLL )
 //-----------------------------------------------------------------------------
 // Purpose: Anti-hack
@@ -1696,105 +1719,98 @@ void CBaseCombatWeapon::ItemPostFrame( void )
 		return;
 
 	UpdateAutoFire();
+	WeaponIdle();
+
+	int iPrimaryBits, iSecondaryBits;
+
+	if ( !pOwner->Weapon_IsDualWielding() )
+	{
+		iPrimaryBits = IN_ATTACK;
+		iSecondaryBits = IN_ATTACK2;
+	}
+	else
+	{
+		iPrimaryBits = IsSecondary() ? IN_ATTACK : IN_ATTACK2;
+		iSecondaryBits = 0;
+	}
 
 	//Track the duration of the fire
 	//FIXME: Check for IN_ATTACK2 as well?
 	//FIXME: What if we're calling ItemBusyFrame?
-	m_fFireDuration = ( pOwner->m_nButtons & IN_ATTACK ) ? ( m_fFireDuration + gpGlobals->frametime ) : 0.0f;
+	m_fFireDuration = ( iPrimaryBits && pOwner->m_nButtons & iPrimaryBits ) ? ( m_fFireDuration + gpGlobals->frametime ) : 0.0f;
 
 	if ( UsesClipsForAmmo1() )
 	{
 		CheckReload();
 	}
 
-	bool bFired = false;
+	CBaseCombatWeapon *pSecondaryWeapon = pOwner->Weapon_GetOtherWeapon( this );
+
+	if ( m_bInReload || (pSecondaryWeapon && pSecondaryWeapon->m_bInReload) )
+		return;
 
 	// Secondary attack has priority
-	if ( ( pOwner->m_nButtons & IN_ATTACK2 ) )
+	if ( HasIronsights() )
 	{
-		if ( UsesSecondaryAmmo() && pOwner->GetAmmoCount(m_iSecondaryAmmoType) <= 0 )
+		if ( iSecondaryBits && (pOwner->m_nButtons & iSecondaryBits) )
 		{
-			if (m_flNextEmptySoundTime < gpGlobals->curtime)
+			if (!IsIronsighted())
 			{
-				WeaponSound( EMPTY );
-				m_flNextSecondaryAttack = m_flNextEmptySoundTime = gpGlobals->curtime + 0.5;
+				EnableIronsights();
 			}
-		}
-		else if ( pOwner->GetWaterLevel() == 3 && !m_bAltFiresUnderwater )
-		{
-			// This weapon doesn't fire underwater
-			WeaponSound( EMPTY );
-			m_flNextSecondaryAttack = gpGlobals->curtime + 0.2;
-			return;
-		}
-		else if ( CanPerformSecondaryAttack() )
-		{
-			// FIXME: This isn't necessarily true if the weapon doesn't have a secondary fire!
-			// For instance, the crossbow doesn't have a 'real' secondary fire, but it still 
-			// stops the crossbow from firing on the 360 if the player chooses to hold down their
-			// zoom button. (sjb) Orange Box 7/25/2007
-#if !defined(CLIENT_DLL)
-			if( !IsX360() || !ClassMatches("weapon_crossbow") )
-#endif
-			{
-				bFired = ShouldBlockPrimaryFire();
-			}
-
-			SecondaryAttack();
-
-			// Secondary ammo doesn't have a reload animation
-			if ( UsesClipsForAmmo2() )
-			{
-				// reload clip2 if empty
-				if ( m_iClip2 < 1 )
-				{
-					pOwner->RemoveAmmo( 1, m_iSecondaryAmmoType );
-					m_iClip2 = m_iClip2 + 1;
-				}
-			}
-		}
-	}
-	
-	if ( !bFired && (pOwner->m_nButtons & IN_ATTACK) && (m_flNextPrimaryAttack <= gpGlobals->curtime))
-	{
-		// Clip empty? Or out of ammo on a no-clip weapon?
-		if ( !IsMeleeWeapon() &&  
-			(( UsesClipsForAmmo1() && m_iClip1 <= 0) || ( !UsesClipsForAmmo1() && pOwner->GetAmmoCount(m_iPrimaryAmmoType)<=0 )) )
-		{
-			HandleFireOnEmpty();
-		}
-		else if (pOwner->GetWaterLevel() == 3 && m_bFiresUnderwater == false)
-		{
-			// This weapon doesn't fire underwater
-			WeaponSound(EMPTY);
-			m_flNextPrimaryAttack = gpGlobals->curtime + 0.2;
-			return;
 		}
 		else
 		{
-			//NOTENOTE: There is a bug with this code with regards to the way machine guns catch the leading edge trigger
-			//			on the player hitting the attack key.  It relies on the gun catching that case in the same frame.
-			//			However, because the player can also be doing a secondary attack, the edge trigger may be missed.
-			//			We really need to hold onto the edge trigger and only clear the condition when the gun has fired its
-			//			first shot.  Right now that's too much of an architecture change -- jdw
-			
-			// If the firing button was just pressed, or the alt-fire just released, reset the firing time
-			if ( ( pOwner->m_afButtonPressed & IN_ATTACK ) || ( pOwner->m_afButtonReleased & IN_ATTACK2 ) )
+			if (IsIronsighted())
 			{
-				 m_flNextPrimaryAttack = gpGlobals->curtime;
+				DisableIronsights();
 			}
+		}
+	}
 
-			PrimaryAttack();
+	SetIronsightPercent();
+	
+	if ( iPrimaryBits && (pOwner->m_nButtons & iPrimaryBits) && (m_flNextPrimaryAttack <= gpGlobals->curtime))
+	{
+		if ( m_flNextAttackStart == 0 ) {
+			m_flNextAttackStart = gpGlobals->curtime + GetWpnData().m_flTimeToFireDelay;
+			WeaponSound( PRIME );
+		}
 
-			if ( AutoFiresFullClip() )
+		if (m_flNextAttackStart <= gpGlobals->curtime && m_flNextAttackStart != 0)
+		{
+			// Clip empty? Or out of ammo on a no-clip weapon?
+			if ( !IsMeleeWeapon() &&  
+				(( UsesClipsForAmmo1() && m_iClip1 <= 0) || ( !UsesClipsForAmmo1() && pOwner->GetAmmoCount(m_iPrimaryAmmoType)<=0 )) )
 			{
-				m_bFiringWholeClip = true;
+				HandleFireOnEmpty();
 			}
+			else if (pOwner->GetWaterLevel() == 3 && m_bFiresUnderwater == false)
+			{
+				// This weapon doesn't fire underwater
+				WeaponSound(EMPTY);
+				m_flNextPrimaryAttack = gpGlobals->curtime + 0.2;
+				m_flNextAttackStart = 0;
+				return;
+			}
+			else
+			{
+				PrimaryAttack();
+
+				if ( AutoFiresFullClip() )
+				{
+					m_bFiringWholeClip = true;
+				}
 
 #ifdef CLIENT_DLL
-			pOwner->SetFiredWeapon( true );
+				pOwner->SetFiredWeapon( true );
 #endif
+			}
 		}
+	}
+	else
+	{
+		m_flNextAttackStart = 0;
 	}
 
 	// -----------------------
@@ -1805,18 +1821,6 @@ void CBaseCombatWeapon::ItemPostFrame( void )
 		// reload when reload is pressed, or if no buttons are down and weapon is empty.
 		Reload();
 		m_fFireDuration = 0.0f;
-	}
-
-	// -----------------------
-	//  No buttons down
-	// -----------------------
-	if (!((pOwner->m_nButtons & IN_ATTACK) || (pOwner->m_nButtons & IN_ATTACK2) || (CanReload() && pOwner->m_nButtons & IN_RELOAD)))
-	{
-		// no fire buttons down or reloading
-		if ( !ReloadOrSwitchWeapons() && ( m_bInReload == false ) )
-		{
-			WeaponIdle();
-		}
 	}
 }
 
@@ -1884,6 +1888,73 @@ const WeaponProficiencyInfo_t *CBaseCombatWeapon::GetProficiencyValues()
 	return defaultWeaponProficiencyTable;
 }
 
+bool CBaseCombatWeapon::HasIronsights( void )
+{
+	return GetWpnData().m_bHasIronsights;
+}
+
+bool CBaseCombatWeapon::IsIronsighted( void )
+{
+	return ( m_bIsIronsighted );
+}
+
+void CBaseCombatWeapon::EnableIronsights( void )
+{
+#ifdef CLIENT_DLL
+	if( !prediction->IsFirstTimePredicted() )
+		return;
+#endif
+	if( !HasIronsights() || m_bIsIronsighted )
+		return;
+
+	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
+
+	if( !pOwner )
+		return;
+
+	m_bIsIronsighted = true;
+}
+
+void CBaseCombatWeapon::DisableIronsights( void )
+{
+#ifdef CLIENT_DLL
+	if( !prediction->IsFirstTimePredicted() )
+		return;
+#endif
+	if( !HasIronsights() || !m_bIsIronsighted )
+		return;
+
+	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
+
+	if( !pOwner )
+		return;
+
+	m_bIsIronsighted = false;
+}
+
+void CBaseCombatWeapon::SetIronsightPercent( void )
+{
+	float flDifference = IsIronsighted() ? gpGlobals->frametime : -gpGlobals->frametime;
+	float flScale = 2.10f;
+
+	m_flIronsightPercent = Clamp(m_flIronsightPercent + (flDifference * flScale), 0.0f, 1.0f);
+}
+
+float CBaseCombatWeapon::GetIronsightPercent( void ) // from 0 to 1
+{
+	return m_flIronsightPercent;
+}
+
+Vector CBaseCombatWeapon::GetIronsightPositionOffset( void ) const
+{
+	return GetWpnData().m_vecIronsightPosOffset;
+}
+
+Vector CBaseCombatWeapon::GetFanningPositionOffset( void ) const
+{
+	return GetWpnData().m_vecFanningPosOffset;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Base class default for getting firerate
 // Input  :
@@ -1891,7 +1962,7 @@ const WeaponProficiencyInfo_t *CBaseCombatWeapon::GetProficiencyValues()
 //-----------------------------------------------------------------------------
 float CBaseCombatWeapon::GetFireRate( void )
 {
-	return 0;
+	return GetWpnData().m_flTimeFireDelay;
 }
 
 //-----------------------------------------------------------------------------
@@ -2010,18 +2081,17 @@ bool CBaseCombatWeapon::DefaultReload( int iClipSize1, int iClipSize2, int iActi
 	if (!pOwner)
 		return false;
 
-	// If I don't have any spare ammo, I can't reload
-	if ( pOwner->GetAmmoCount(m_iPrimaryAmmoType) <= 0 )
+	if (!IsWeaponVisible())
 		return false;
+
+	DisableIronsights();
 
 	bool bReload = false;
 
 	// If you don't have clips, then don't try to reload them.
 	if ( UsesClipsForAmmo1() )
 	{
-		// need to reload primary clip?
-		int primary	= MIN(iClipSize1 - m_iClip1, pOwner->GetAmmoCount(m_iPrimaryAmmoType));
-		if ( primary != 0 )
+		if ( m_iClip1 < iClipSize1 )
 		{
 			bReload = true;
 		}
@@ -2030,8 +2100,7 @@ bool CBaseCombatWeapon::DefaultReload( int iClipSize1, int iClipSize2, int iActi
 	if ( UsesClipsForAmmo2() )
 	{
 		// need to reload secondary clip?
-		int secondary = MIN(iClipSize2 - m_iClip2, pOwner->GetAmmoCount(m_iSecondaryAmmoType));
-		if ( secondary != 0 )
+		if ( m_iClip2 < iClipSize2 )
 		{
 			bReload = true;
 		}
@@ -2040,47 +2109,31 @@ bool CBaseCombatWeapon::DefaultReload( int iClipSize1, int iClipSize2, int iActi
 	if ( !bReload )
 		return false;
 
+	CBaseCombatWeapon *pSecondaryWeapon = pOwner->Weapon_GetOtherWeapon( this );
+
+	if ( pSecondaryWeapon )
+		pSecondaryWeapon->Holster();
+
 #ifdef CLIENT_DLL
 	// Play reload
 	WeaponSound( RELOAD );
 #endif
 	SendWeaponAnim( iActivity );
 
-	// Play the player's reload animation
-	if ( pOwner->IsPlayer() )
-	{
-		( ( CBasePlayer * )pOwner)->SetAnimation( PLAYER_RELOAD );
-	}
-
 	MDLCACHE_CRITICAL_SECTION();
-	float flSequenceEndTime = gpGlobals->curtime + SequenceDuration();
-	pOwner->SetNextAttack( flSequenceEndTime );
-	m_flNextPrimaryAttack = m_flNextSecondaryAttack = flSequenceEndTime;
 
+	m_iReloadMode = ReloadsSingly() ? RELOAD_START : RELOAD_FINISH;
+	SendWeaponAnim( ReloadsSingly() ? ACT_SHOTGUN_RELOAD_START : ACT_VM_RELOAD );
+	ResetViewmodelAnimation();
+	m_flNextReloadTime = gpGlobals->curtime + SequenceDuration();
 	m_bInReload = true;
 
 	return true;
 }
 
-bool CBaseCombatWeapon::ReloadsSingly( void ) const
+bool CBaseCombatWeapon::ReloadsSingly( void )
 {
-#if defined ( TF_DLL ) || defined ( TF_CLIENT_DLL )
-	float fHasReload = 1.0f;
-	CALL_ATTRIB_HOOK_FLOAT( fHasReload, mod_no_reload_display_only );
-	if ( fHasReload != 1.0f )
-	{
-		return false;
-	}
-
-	int iWeaponMod = 0;
-	CALL_ATTRIB_HOOK_INT( iWeaponMod, set_scattergun_no_reload_single );
-	if ( iWeaponMod == 1 )
-	{
-		return false;
-	}
-#endif // TF_DLL || TF_CLIENT_DLL
-
-	return m_bReloadsSingly;
+	return GetWpnData().m_bReloadsSingly;
 }
 
 //-----------------------------------------------------------------------------
@@ -2139,55 +2192,68 @@ char *CBaseCombatWeapon::GetDeathNoticeName( void )
 //====================================================================================
 void CBaseCombatWeapon::CheckReload( void )
 {
-	if ( m_bReloadsSingly )
+	if ( !m_bInReload )
+		return;
+
+	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
+	if ( !pOwner )
+		return;
+
+	if ( m_flNextReloadTime > gpGlobals->curtime )
+		return;
+
+	MDLCACHE_CRITICAL_SECTION();
+
+	if ( ReloadsSingly() )
 	{
-		CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-		if ( !pOwner )
-			return;
-
-		if ((m_bInReload) && (m_flNextPrimaryAttack <= gpGlobals->curtime))
+		if ( m_iReloadMode == RELOAD_START )
 		{
-			if ( pOwner->m_nButtons & (IN_ATTACK | IN_ATTACK2) && m_iClip1 > 0 )
+			m_iReloadMode = RELOAD_LOOP;
+			SendWeaponAnim( ACT_VM_RELOAD );
+			ResetViewmodelAnimation();
+			m_flNextReloadTime = gpGlobals->curtime + SequenceDuration();
+		}
+		else if ( m_iReloadMode == RELOAD_LOOP )
+		{
+			if (m_iClip1 + 1 < GetMaxClip1() && !(pOwner->m_nButtons & (IN_ATTACK2)) )
 			{
-				m_bInReload = false;
-				return;
-			}
-
-			// If out of ammo end reload
-			if (pOwner->GetAmmoCount(m_iPrimaryAmmoType) <=0)
-			{
-				FinishReload();
-				return;
-			}
-			// If clip not full reload again
-			else if (m_iClip1 < GetMaxClip1())
-			{
-				// Add them to the clip
 				m_iClip1 += 1;
-				pOwner->RemoveAmmo( 1, m_iPrimaryAmmoType );
-
-				Reload();
-				return;
+				m_iReloadMode = RELOAD_LOOP;
+				SendWeaponAnim( ACT_VM_RELOAD );
+				ResetViewmodelAnimation();
+				m_flNextReloadTime = gpGlobals->curtime + SequenceDuration();
 			}
-			// Clip full, stop reloading
 			else
 			{
-				FinishReload();
-				m_flNextPrimaryAttack	= gpGlobals->curtime;
-				m_flNextSecondaryAttack = gpGlobals->curtime;
-				return;
+				m_iClip1 += 1;
+				m_iReloadMode = RELOAD_FINISH;
+				SendWeaponAnim( ACT_SHOTGUN_RELOAD_FINISH );
+				ResetViewmodelAnimation();
+				m_flNextReloadTime = gpGlobals->curtime + SequenceDuration();
 			}
+		}
+		else if ( m_iReloadMode == RELOAD_FINISH )
+		{
+			m_iReloadMode = RELOAD_START;
+			m_bInReload = false;
+
+			CBaseCombatWeapon *pSecondaryWeapon = pOwner->Weapon_GetOtherWeapon( this );
+
+			if ( pSecondaryWeapon )
+				pSecondaryWeapon->Deploy();
 		}
 	}
 	else
 	{
-		if ( (m_bInReload) && (m_flNextPrimaryAttack <= gpGlobals->curtime))
-		{
-			FinishReload();
-			m_flNextPrimaryAttack	= gpGlobals->curtime;
-			m_flNextSecondaryAttack = gpGlobals->curtime;
-			m_bInReload = false;
-		}
+		m_iClip1 = GetMaxClip1();
+
+		m_iReloadMode = RELOAD_START;
+		m_bInReload = false;
+
+		CBaseCombatWeapon *pSecondaryWeapon = pOwner->Weapon_GetOtherWeapon( this );
+
+		if ( pSecondaryWeapon )
+			pSecondaryWeapon->Deploy();
 	}
 }
 
@@ -2203,20 +2269,18 @@ void CBaseCombatWeapon::FinishReload( void )
 		// If I use primary clips, reload primary
 		if ( UsesClipsForAmmo1() )
 		{
-			int primary	= MIN( GetMaxClip1() - m_iClip1, pOwner->GetAmmoCount(m_iPrimaryAmmoType));	
+			int primary	= GetMaxClip1() - m_iClip1;
 			m_iClip1 += primary;
-			pOwner->RemoveAmmo( primary, m_iPrimaryAmmoType);
 		}
 
 		// If I use secondary clips, reload secondary
 		if ( UsesClipsForAmmo2() )
 		{
-			int secondary = MIN( GetMaxClip2() - m_iClip2, pOwner->GetAmmoCount(m_iSecondaryAmmoType));
+			int secondary = GetMaxClip2() - m_iClip2;
 			m_iClip2 += secondary;
-			pOwner->RemoveAmmo( secondary, m_iSecondaryAmmoType );
 		}
 
-		if ( m_bReloadsSingly )
+		if ( ReloadsSingly() )
 		{
 			m_bInReload = false;
 		}
@@ -2298,9 +2362,7 @@ void CBaseCombatWeapon::PrimaryAttack( void )
 	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
 
 	if (!pPlayer)
-	{
 		return;
-	}
 
 	pPlayer->DoMuzzleFlash();
 
@@ -2308,6 +2370,20 @@ void CBaseCombatWeapon::PrimaryAttack( void )
 
 	// player "shoot" animation
 	pPlayer->SetAnimation( PLAYER_ATTACK1 );
+
+	FireProjectile();
+
+	//Add our view kick in
+	AddViewKick();
+}
+
+//-----------------------------------------------------------------------------
+CBaseEntity *CBaseCombatWeapon::FireProjectile()
+{
+	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
+
+	if (!pPlayer)
+		return NULL;
 
 	FireBulletsInfo_t info;
 	info.m_vecSrc	 = pPlayer->Weapon_ShootPosition( );
@@ -2317,17 +2393,13 @@ void CBaseCombatWeapon::PrimaryAttack( void )
 	// To make the firing framerate independent, we may have to fire more than one bullet here on low-framerate systems, 
 	// especially if the weapon we're firing has a really fast rate of fire.
 	info.m_iShots = 0;
-	float fireRate = GetFireRate();
 
-	while ( m_flNextPrimaryAttack <= gpGlobals->curtime )
-	{
-		// MUST call sound before removing a round from the clip of a CMachineGun
-		WeaponSound(SINGLE, m_flNextPrimaryAttack);
-		m_flNextPrimaryAttack = m_flNextPrimaryAttack + fireRate;
-		info.m_iShots++;
-		if ( !fireRate )
-			break;
-	}
+	WeaponSound(SINGLE, m_flNextPrimaryAttack);
+	m_flNextPrimaryAttack = gpGlobals->curtime + GetFireRate();
+	m_flNextAttackStart = 0;
+	info.m_iShots = GetWpnData().m_nAmmoPerShot;
+
+	info.m_pWeapon = this;
 
 	// Make sure we don't fire more than the amount in the clip
 	if ( UsesClipsForAmmo1() )
@@ -2345,13 +2417,7 @@ void CBaseCombatWeapon::PrimaryAttack( void )
 	info.m_iAmmoType = m_iPrimaryAmmoType;
 	info.m_iTracerFreq = 2;
 
-#if !defined( CLIENT_DLL )
-	// Fire the bullets
-	info.m_vecSpread = pPlayer->GetAttackSpread( this );
-#else
-	//!!!HACKHACK - what does the client want this function for? 
-	info.m_vecSpread = GetActiveWeapon()->GetBulletSpread();
-#endif // CLIENT_DLL
+	info.m_vecSpread = GetBulletSpread();
 
 	pPlayer->FireBullets( info );
 
@@ -2361,8 +2427,7 @@ void CBaseCombatWeapon::PrimaryAttack( void )
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0); 
 	}
 
-	//Add our view kick in
-	AddViewKick();
+	return NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -2575,9 +2640,13 @@ BEGIN_PREDICTION_DATA( CBaseCombatWeapon )
 	DEFINE_PRED_FIELD( m_iState, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),			 
 	DEFINE_PRED_FIELD( m_iViewModelIndex, FIELD_INTEGER, FTYPEDESC_INSENDTABLE | FTYPEDESC_MODELINDEX ),
 	DEFINE_PRED_FIELD( m_iWorldModelIndex, FIELD_INTEGER, FTYPEDESC_INSENDTABLE | FTYPEDESC_MODELINDEX ),
+	DEFINE_PRED_FIELD_TOL( m_flNextAttackStart, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE ),	
 	DEFINE_PRED_FIELD_TOL( m_flNextPrimaryAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE ),	
 	DEFINE_PRED_FIELD_TOL( m_flNextSecondaryAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE ),
 	DEFINE_PRED_FIELD_TOL( m_flTimeWeaponIdle, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE ),
+
+	DEFINE_PRED_FIELD_TOL( m_flNextReloadTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE ),
+	DEFINE_PRED_FIELD( m_iReloadMode, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 
 	DEFINE_PRED_FIELD( m_iPrimaryAmmoType, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_iSecondaryAmmoType, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
@@ -2585,6 +2654,9 @@ BEGIN_PREDICTION_DATA( CBaseCombatWeapon )
 	DEFINE_PRED_FIELD( m_iClip2, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),			
 
 	DEFINE_PRED_FIELD( m_nViewModelIndex, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
+
+	DEFINE_PRED_FIELD( m_bIsIronsighted, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
+	DEFINE_PRED_FIELD( m_flIronsightPercent, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
 
 	// Not networked
 
@@ -2601,7 +2673,6 @@ BEGIN_PREDICTION_DATA( CBaseCombatWeapon )
 	DEFINE_FIELD( m_fMinRange2, FIELD_FLOAT ),		
 	DEFINE_FIELD( m_fMaxRange1, FIELD_FLOAT ),		
 	DEFINE_FIELD( m_fMaxRange2, FIELD_FLOAT ),		
-	DEFINE_FIELD( m_bReloadsSingly, FIELD_BOOLEAN ),	
 	DEFINE_FIELD( m_bRemoveable, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_iPrimaryAmmoCount, FIELD_INTEGER ),
 	DEFINE_FIELD( m_iSecondaryAmmoCount, FIELD_INTEGER ),
@@ -2627,6 +2698,7 @@ IMPLEMENT_NETWORKCLASS_ALIASED( BaseCombatWeapon, DT_BaseCombatWeapon )
 //-----------------------------------------------------------------------------// 
 BEGIN_DATADESC( CBaseCombatWeapon )
 
+	DEFINE_FIELD( m_flNextAttackStart, FIELD_TIME ),
 	DEFINE_FIELD( m_flNextPrimaryAttack, FIELD_TIME ),
 	DEFINE_FIELD( m_flNextSecondaryAttack, FIELD_TIME ),
 	DEFINE_FIELD( m_flTimeWeaponIdle, FIELD_TIME ),
@@ -2661,7 +2733,6 @@ BEGIN_DATADESC( CBaseCombatWeapon )
 
 	DEFINE_FIELD( m_fFireDuration, FIELD_FLOAT ),
 
-	DEFINE_FIELD( m_bReloadsSingly, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_iSubType, FIELD_INTEGER ),
  	DEFINE_FIELD( m_bRemoveable, FIELD_BOOLEAN ),
 
@@ -2812,20 +2883,28 @@ static void RecvProxy_WeaponOwner ( const CRecvProxyData *pData, void *pStruct, 
 //-----------------------------------------------------------------------------
 BEGIN_NETWORK_TABLE_NOBASE( CBaseCombatWeapon, DT_LocalActiveWeaponData )
 #if !defined( CLIENT_DLL )
+	SendPropTime( SENDINFO( m_flNextAttackStart ) ),
 	SendPropTime( SENDINFO( m_flNextPrimaryAttack ) ),
 	SendPropTime( SENDINFO( m_flNextSecondaryAttack ) ),
-	SendPropInt( SENDINFO( m_nNextThinkTick ) ),
 	SendPropTime( SENDINFO( m_flTimeWeaponIdle ) ),
+	SendPropInt( SENDINFO( m_nNextThinkTick ) ),
+
+	SendPropTime( SENDINFO( m_flNextReloadTime ) ),
+	SendPropInt( SENDINFO( m_iReloadMode ) ),
 
 #if defined( TF_DLL )
 	SendPropExclude( "DT_AnimTimeMustBeFirst" , "m_flAnimTime" ),
 #endif
 
 #else
+	RecvPropTime( RECVINFO( m_flNextAttackStart ) ),
 	RecvPropTime( RECVINFO( m_flNextPrimaryAttack ) ),
 	RecvPropTime( RECVINFO( m_flNextSecondaryAttack ) ),
-	RecvPropInt( RECVINFO( m_nNextThinkTick ) ),
 	RecvPropTime( RECVINFO( m_flTimeWeaponIdle ) ),
+	RecvPropInt( RECVINFO( m_nNextThinkTick ) ),
+
+	RecvPropTime( RECVINFO( m_flNextReloadTime ) ),
+	RecvPropInt( RECVINFO( m_iReloadMode ) ),
 #endif
 END_NETWORK_TABLE()
 
@@ -2862,6 +2941,17 @@ BEGIN_NETWORK_TABLE_NOBASE( CBaseCombatWeapon, DT_LocalWeaponData )
 #endif
 END_NETWORK_TABLE()
 
+#ifdef CLIENT_DLL
+void RecvProxy_ToggleSights( const CRecvProxyData* pData, void* pStruct, void* pOut )
+{
+	CBaseCombatWeapon *pWeapon = (CBaseCombatWeapon*)pStruct;
+	if( pData->m_Value.m_Int )
+		pWeapon->EnableIronsights();
+	else
+		pWeapon->DisableIronsights();
+}
+#endif
+
 BEGIN_NETWORK_TABLE(CBaseCombatWeapon, DT_BaseCombatWeapon)
 #if !defined( CLIENT_DLL )
 	SendPropDataTable("LocalWeaponData", 0, &REFERENCE_SEND_TABLE(DT_LocalWeaponData), SendProxy_SendLocalWeaponDataTable ),
@@ -2870,6 +2960,8 @@ BEGIN_NETWORK_TABLE(CBaseCombatWeapon, DT_BaseCombatWeapon)
 	SendPropModelIndex( SENDINFO(m_iWorldModelIndex) ),
 	SendPropInt( SENDINFO(m_iState ), 8, SPROP_UNSIGNED ),
 	SendPropEHandle( SENDINFO(m_hOwner) ),
+	SendPropInt( SENDINFO( m_bIsIronsighted ), -1, SPROP_CHANGES_OFTEN ),
+	SendPropFloat( SENDINFO( m_flIronsightPercent ) ),
 #else
 	RecvPropDataTable("LocalWeaponData", 0, 0, &REFERENCE_RECV_TABLE(DT_LocalWeaponData)),
 	RecvPropDataTable("LocalActiveWeaponData", 0, 0, &REFERENCE_RECV_TABLE(DT_LocalActiveWeaponData)),
@@ -2877,5 +2969,7 @@ BEGIN_NETWORK_TABLE(CBaseCombatWeapon, DT_BaseCombatWeapon)
 	RecvPropInt( RECVINFO(m_iWorldModelIndex)),
 	RecvPropInt( RECVINFO(m_iState), 0, &CBaseCombatWeapon::RecvProxy_WeaponState ),
 	RecvPropEHandle( RECVINFO(m_hOwner ), RecvProxy_WeaponOwner ),
+	RecvPropInt( RECVINFO( m_bIsIronsighted ), 0, RecvProxy_ToggleSights ), //note: RecvPropBool is actually RecvPropInt (see its implementation), but we need a proxy
+	RecvPropFloat( RECVINFO( m_flIronsightPercent ) ),
 #endif
 END_NETWORK_TABLE()

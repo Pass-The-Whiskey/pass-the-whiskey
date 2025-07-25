@@ -70,14 +70,19 @@ public:
 	int					GetAmmoCount( int iAmmoIndex ) const;
 	int					GetAmmoCount( char *szName ) const;
 
-	C_BaseCombatWeapon*	Weapon_OwnsThisType( const char *pszWeapon, int iSubType = 0 ) const;  // True if already owns a weapon of this class
+	C_BaseCombatWeapon  *Weapon_OwnsThisType( const char *pszWeapon, int iSubType = 0 ) const;  // True if already owns a weapon of this class
 	virtual	bool		Weapon_Switch( C_BaseCombatWeapon *pWeapon, int viewmodelindex = 0 );
 	virtual bool		Weapon_CanSwitchTo(C_BaseCombatWeapon *pWeapon);
 	
+	C_BaseCombatWeapon	*Weapon_GetOtherWeapon( C_BaseCombatWeapon *pWeapon );
+
+	virtual bool		Weapon_IsDualWielding( void ) { return ( m_hActiveWeapon != NULL && m_hActiveWeapon2 != NULL ); };
+
 	// I can't use my current weapon anymore. Switch me to the next best weapon.
 	bool SwitchToNextBestWeapon(C_BaseCombatWeapon *pCurrent);
 
 	virtual C_BaseCombatWeapon	*GetActiveWeapon( void ) const;
+	virtual C_BaseCombatWeapon	*GetActiveWeapon2( void ) const;
 	int					WeaponCount() const;
 	C_BaseCombatWeapon	*GetWeapon( int i ) const;
 
@@ -94,25 +99,11 @@ public:
 
 	virtual void		DoMuzzleFlash();
 
-#ifdef GLOWS_ENABLE
-	CGlowObject			*GetGlowObject( void ){ return m_pGlowEffect; }
-	virtual void		GetGlowEffectColor( float *r, float *g, float *b );
-//	void				EnableGlowEffect( float r, float g, float b );
-
-	void				SetClientSideGlowEnabled( bool bEnabled ){ m_bClientSideGlowEnabled = bEnabled; UpdateGlowEffect(); }
-	bool				IsClientSideGlowEnabled( void ){ return m_bClientSideGlowEnabled; }
-#endif // GLOWS_ENABLE
-
 public:
 
 	float			m_flNextAttack;
 
 protected:
-
-#ifdef GLOWS_ENABLE	
-	virtual void		UpdateGlowEffect( void );
-	virtual void		DestroyGlowEffect( void );
-#endif // GLOWS_ENABLE
 
 	int			m_bloodColor;			// color of blood particless
 
@@ -123,13 +114,7 @@ private:
 
 	CHandle<C_BaseCombatWeapon>		m_hMyWeapons[MAX_WEAPONS];
 	CHandle< C_BaseCombatWeapon > m_hActiveWeapon;
-
-#ifdef GLOWS_ENABLE
-	bool				m_bClientSideGlowEnabled;	// client-side only value used for spectator
-	bool				m_bGlowEnabled;				// networked value
-	bool				m_bOldGlowEnabled;
-	CGlowObject			*m_pGlowEffect;
-#endif // GLOWS_ENABLE
+	CHandle< C_BaseCombatWeapon > m_hActiveWeapon2;
 
 private:
 	C_BaseCombatCharacter( const C_BaseCombatCharacter & ); // not defined, not accessible

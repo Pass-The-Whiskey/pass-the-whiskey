@@ -708,7 +708,6 @@ enum FireBulletsFlags_t
 	FIRE_BULLETS_TEMPORARY_DANGER_SOUND = 0x8,		// Danger sounds added from this impact can be stomped immediately if another is queued
 };
 
-
 struct FireBulletsInfo_t
 {
 	FireBulletsInfo_t()
@@ -722,6 +721,7 @@ struct FireBulletsInfo_t
 		m_pAttacker = NULL;
 		m_nFlags = 0;
 		m_pAdditionalIgnoreEnt = NULL;
+		m_pWeapon = NULL;
 		m_flDamageForceScale = 1.0f;
 
 #ifdef _DEBUG
@@ -747,6 +747,7 @@ struct FireBulletsInfo_t
 		m_pAttacker = NULL;
 		m_nFlags = 0;
 		m_pAdditionalIgnoreEnt = NULL;
+		m_pWeapon = NULL;
 		m_flDamageForceScale = 1.0f;
 		m_bPrimaryAttack = bPrimaryAttack;
 		m_bUseServerRandomSeed = false;
@@ -765,6 +766,7 @@ struct FireBulletsInfo_t
 	float m_flDamageForceScale;
 	CBaseEntity *m_pAttacker;
 	CBaseEntity *m_pAdditionalIgnoreEnt;
+	CBaseEntity *m_pWeapon;
 	bool m_bPrimaryAttack;
 	bool m_bUseServerRandomSeed;
 };

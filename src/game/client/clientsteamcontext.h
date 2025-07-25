@@ -31,7 +31,7 @@ public:
 
 	bool BLoggedOn() { return m_bLoggedOn; }
 	EUniverse GetConnectedUniverse() { return m_nUniverse; }
-	uint32 GetAppID() { return m_nAppID; }
+	uint32 GetAppID() { return 265630; }
 	const CSteamID & GetLocalPlayerSteamID() { return m_SteamIDLocalPlayer; }
 
 	// Allow others to register for a callback when the Steam logged on status changes	

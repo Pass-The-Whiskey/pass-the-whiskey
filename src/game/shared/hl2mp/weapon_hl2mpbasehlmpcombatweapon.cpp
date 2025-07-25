@@ -59,30 +59,6 @@ CBaseHL2MPCombatWeapon::CBaseHL2MPCombatWeapon( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseHL2MPCombatWeapon::ItemHolsterFrame( void )
-{
-	BaseClass::ItemHolsterFrame();
-
-	// Must be player held
-	if ( GetOwner() && GetOwner()->IsPlayer() == false )
-		return;
-
-	// We can't be active
-	if ( GetOwner()->GetActiveWeapon() == this )
-		return;
-
-	// If it's been longer than three seconds, reload
-	if ( ( gpGlobals->curtime - m_flHolsterTime ) > sk_auto_reload_time.GetFloat() )
-	{
-		// Just load the clip with no animations
-		FinishReload();
-		m_flHolsterTime = gpGlobals->curtime;
-	}
-}
-
-//-----------------------------------------------------------------------------
 // Purpose: Drops the weapon into a lowered pose
 // Output : Returns true on success, false on failure.
 //-----------------------------------------------------------------------------
@@ -326,19 +302,21 @@ void CBaseHL2MPCombatWeapon::AddViewmodelBob( CBaseViewModel *viewmodel, Vector 
 
 	CalcViewmodelBob();
 
+	float flScale =  1.0 - GetIronsightPercent();
+
 	// Apply bob, but scaled down to 40%
-	VectorMA( origin, g_verticalBob * 0.1f, forward, origin );
+	VectorMA( origin, (g_verticalBob * 0.1f) * flScale, forward, origin );
 	
 	// Z bob a bit more
-	origin[2] += g_verticalBob * 0.1f;
+	origin[2] += (g_verticalBob * 0.1f) * flScale;
 	
 	// bob the angles
-	angles[ ROLL ]	+= g_verticalBob * 0.5f;
-	angles[ PITCH ]	-= g_verticalBob * 0.4f;
+	angles[ ROLL ]	+= (g_verticalBob * 0.5f) * flScale;
+	angles[ PITCH ]	-= (g_verticalBob * 0.4f) * flScale;
 
-	angles[ YAW ]	-= g_lateralBob  * 0.3f;
+	angles[ YAW ]	-= (g_lateralBob * 0.3f) * flScale;
 
-	VectorMA( origin, g_lateralBob * 0.8f, right, origin );
+	VectorMA( origin, (g_lateralBob * 0.8f) * flScale, right, origin );
 }
 
 //-----------------------------------------------------------------------------
@@ -376,7 +354,6 @@ float CBaseHL2MPCombatWeapon::CalcViewmodelBob( void )
 void CBaseHL2MPCombatWeapon::AddViewmodelBob( CBaseViewModel *viewmodel, Vector &origin, QAngle &angles )
 {
 }
-
 
 //-----------------------------------------------------------------------------
 Vector CBaseHL2MPCombatWeapon::GetBulletSpread( WeaponProficiency_t proficiency )
@@ -420,3 +397,9 @@ const WeaponProficiencyInfo_t *CBaseHL2MPCombatWeapon::GetDefaultProficiencyValu
 }
 
 #endif
+
+//-----------------------------------------------------------------------------
+CBaseEntity *CBaseHL2MPCombatWeapon::FireProjectile()
+{
+	return BaseClass::FireProjectile(); // GTODO : when you do custom weapons and the like , make this an actual projectile check
+}

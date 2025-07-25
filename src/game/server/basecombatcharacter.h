@@ -243,9 +243,12 @@ public:
 	virtual CBaseCombatWeapon *Weapon_GetSlot( int slot ) const;
 	CBaseCombatWeapon	*Weapon_GetWpnForAmmo( int iAmmoIndex );
 
+	CBaseCombatWeapon	*Weapon_GetOtherWeapon( CBaseCombatWeapon *pWeapon );
 
 	// For weapon strip
 	void				Weapon_DropAll( bool bDisallowWeaponPickup = false );
+
+	virtual bool		Weapon_IsDualWielding( void ) { return ( m_hActiveWeapon != NULL && m_hActiveWeapon2 != NULL ); };
 
 	virtual bool			AddPlayerItem( CBaseCombatWeapon *pItem ) { return false; }
 	virtual bool			RemovePlayerItem( CBaseCombatWeapon *pItem ) { return false; }
@@ -350,6 +353,7 @@ public:
 
 	// Weapons..
 	CBaseCombatWeapon*	GetActiveWeapon() const;
+	CBaseCombatWeapon*	GetActiveWeapon2() const;
 	int					WeaponCount() const;
 	CBaseCombatWeapon*	GetWeapon( int i ) const;
 	bool				RemoveWeapon( CBaseCombatWeapon *pWeapon );
@@ -359,7 +363,6 @@ public:
 	virtual WeaponProficiency_t CalcWeaponProficiency( CBaseCombatWeapon *pWeapon );
 	virtual	Vector		GetAttackSpread( CBaseCombatWeapon *pWeapon, CBaseEntity *pTarget = NULL );
 	virtual	float		GetSpreadBias(  CBaseCombatWeapon *pWeapon, CBaseEntity *pTarget );
-	virtual void		DoMuzzleFlash();
 
 	// Interactions
 	static void			InitInteractionSystem();
@@ -386,7 +389,9 @@ public:
 	// This is a hack to blat out the current active weapon...
 	// Used by weapon_slam + game_ui
 	void SetActiveWeapon( CBaseCombatWeapon *pNewWeapon );
+	void SetActiveWeapon2( CBaseCombatWeapon *pNewWeapon );
 	void ClearActiveWeapon() { SetActiveWeapon( NULL ); }
+	void ClearActiveWeapon2() { SetActiveWeapon2( NULL ); }
 	virtual void OnChangeActiveWeapon( CBaseCombatWeapon *pOldWeapon, CBaseCombatWeapon *pNewWeapon ) {}
 
 	// I can't use my current weapon anymore. Switch me to the next best weapon.
@@ -421,13 +426,6 @@ public:
 #ifdef TF_DLL
 	virtual HalloweenBossType GetBossType() const { return HALLOWEEN_BOSS_INVALID; }
 #endif // TF_DLL
-
-#ifdef GLOWS_ENABLE
-	// Glows
-	void				AddGlowEffect( void );
-	void				RemoveGlowEffect( void );
-	bool				IsGlowEffectActive( void );
-#endif // GLOWS_ENABLE
 
 #ifdef INVASION_DLL
 public:
@@ -465,11 +463,6 @@ protected:
 
 public:
 	CNetworkVar( float, m_flNextAttack );			// cannot attack again until this time
-
-#ifdef GLOWS_ENABLE
-protected:
-	CNetworkVar( bool, m_bGlowEnabled );
-#endif // GLOWS_ENABLE
 
 private:
 	Hull_t		m_eHull;
@@ -526,6 +519,7 @@ protected:
 	CNetworkArray( CBaseCombatWeaponHandle, m_hMyWeapons, MAX_WEAPONS );
 
 	CNetworkHandle( CBaseCombatWeapon, m_hActiveWeapon );
+	CNetworkHandle( CBaseCombatWeapon, m_hActiveWeapon2 );
 
 	friend class CCleanupDefaultRelationShips;
 	

@@ -1,0 +1,47 @@
+"Resource/UI/HudNotorietyStatus.res"
+{
+	"NotorietyLabel1"
+	{
+		"ControlName"		"Label"
+		"fieldName"			"NotorietyLabel1"
+		"xpos"				"0"
+		"ypos"				"0"
+		"zpos"				"0"
+		"wide"				"200"
+		"tall"				"35"
+		"textAlignment"		"south-west"
+		"labelText"			"%first%"
+		"font"				"MenuFontSmall"
+		"visible"			"1"
+		"fgcolor_override"	"255 228 0 255"
+	}
+	"NotorietyLabel2"
+	{
+		"ControlName"		"Label"
+		"fieldName"			"NotorietyLabel2"
+		"xpos"				"0"
+		"ypos"				"35"
+		"zpos"				"1"
+		"wide"				"200"
+		"tall"				"30"
+		"textAlignment"		"west"
+		"labelText"			"%second%"
+		"font"				"MenuFontMed"
+		"visible"			"1"
+	}
+	"NotorietyLabel3"
+	{
+		"ControlName"		"Label"
+		"fieldName"			"NotorietyLabel3"
+		"xpos"				"0"
+		"ypos"				"65"
+		"zpos"				"1"
+		"wide"				"200"
+		"tall"				"35"
+		"textAlignment"		"north-west"
+		"labelText"			"%third%"
+		"font"				"MenuFontSmall"
+		"visible"			"1"
+		"fgcolor_override"	"255 228 0 255"
+	}
+}

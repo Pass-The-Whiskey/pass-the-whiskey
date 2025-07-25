@@ -1,0 +1,86 @@
+WeaponData
+{
+	// Weapon data is loaded by both the Game and Client DLLs.
+	"printname"			""
+	"viewmodel"			"models/weapons/v_hammerless.mdl"
+	"playermodel"		"models/weapons/w_hammerless.mdl"
+	"anim_prefix"		""
+	"bucket"			"2"
+	"bucket_position"	"8"
+
+	"clip_size"			"5"
+	"default_clip"		"5"
+	"primary_ammo"		"Revolver"
+	"secondary_ammo"	"None"
+
+	"weight"		"4"
+	"item_flags"		"0"
+
+	"damage"		"29"
+
+	"TimeFireDelay"			"0.5"
+
+	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
+	SoundData
+	{
+		"empty"		"Weapon_Hammerless.Empty"
+		"single_shot"	"Weapon_Hammerless.Single"
+	}
+
+	// Weapon Sprite data is loaded by the Client DLL.
+	TextureData
+	{
+		"weapon"
+		{
+				"font"		"WeaponIcons"
+				"character"	"A"
+		}
+		"weapon_s"
+		{	
+				"font"		"WeaponIconsSelected"
+				"character"	"A"
+		}
+		"ammo"
+		{
+				"font"		"WeaponIcons"
+				"character"	"q"
+		}
+		"crosshair"
+		{
+				"font"		"Crosshairs"
+				"character"	"Q"
+		}
+		"autoaim"
+		{
+				"file"		"sprites/crosshairs"
+				"x"			"0"
+				"y"			"48"
+				"width"		"24"
+				"height"	"24"
+		}
+	}
+ 	
+	ExpOffset // Ironsight
+  	{
+	     "x"   "-8"
+ 	     "y"   "6"
+	     "z"   "-4.5"
+	     "xf"   "-8"
+ 	     "yf"   "6"
+	     "zf"   "-4.5"
+      	}
+
+	Spread // 
+  	{
+	     "crouch"	"0.04"
+ 	     "idle"	"0.04"
+	     "walk"	"0.045"
+	     "run"	"0.1"
+	     "jump"	"0.2"
+	     "speed"	"0.5"		
+    }
+
+	"break_limit"		"18"
+	"break_drop_penalty"	"5"
+	"GunSmokeMult"		"0.75"
+}

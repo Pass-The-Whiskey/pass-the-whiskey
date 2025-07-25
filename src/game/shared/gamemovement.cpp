@@ -16,6 +16,9 @@
 #include "rumble_shared.h"
 #ifdef CLIENT_DLL
 #include "prediction.h"
+#include "c_hl2mp_player.h"
+#else
+#include "hl2mp_player.h"
 #endif
 
 #if defined(HL2_DLL) || defined(HL2_CLIENT_DLL)
@@ -2345,6 +2348,7 @@ void CGameMovement::PlaySwimSound()
 	MoveHelper()->StartSound( mv->GetAbsOrigin(), "Player.Swim" );
 }
 
+ConVar fof_sv_walljump_delay( "fof_sv_walljump_delay", "0.8", FCVAR_REPLICATED );
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -2389,11 +2393,37 @@ bool CGameMovement::CheckJumpButton( void )
 		return false;
 	}
 
+	bool bWallJump = false;
+
 	// No more effect
- 	if (player->GetGroundEntity() == NULL)
+ 	if ( !(player->GetFlags() & FL_ONGROUND) && player->m_afButtonPressed & IN_JUMP )
 	{
-		mv->m_nOldButtons |= IN_JUMP;
-		return false;		// in air, so no effect
+		Ray_t ray;
+		trace_t tr;
+
+		Vector padding = Vector( 10, 10, 0 );
+
+		Vector mins = GetPlayerMins();
+		Vector maxs = GetPlayerMaxs();
+
+		maxs += padding;
+		mins -= padding;
+
+		ray.Init( mv->GetAbsOrigin(), mv->GetAbsOrigin(), mins, maxs );
+		UTIL_TraceRay( ray, (CONTENTS_SOLID | CONTENTS_MOVEABLE | CONTENTS_WINDOW | CONTENTS_GRATE), mv->m_nPlayerHandle.Get(), COLLISION_GROUP_PLAYER_MOVEMENT, &tr );
+
+		CHL2MP_Player* pHLPlayer = ToHL2MPPlayer(player);
+
+		if ( !( tr.fraction == 1.0f ) && (pHLPlayer && !pHLPlayer->m_bWallJumped && pHLPlayer->m_flLastWallJump + fof_sv_walljump_delay.GetFloat() < gpGlobals->curtime && pHLPlayer->GetAbsVelocity().Length() < sqrt(2 * GetCurrentGravity() * (GAMEMOVEMENT_JUMP_HEIGHT / 2))) ) {
+			pHLPlayer->m_flLastWallJump = gpGlobals->curtime;
+			pHLPlayer->m_bWallJumped = true;
+			bWallJump = true;
+		}
+		else
+		{
+			mv->m_nOldButtons |= IN_JUMP;
+			return false;		// in air, so no effect
+		}
 	}
 
 	// Don't allow jumping when the player is in a stasis field.
@@ -2413,10 +2443,14 @@ bool CGameMovement::CheckJumpButton( void )
 	if ( player->m_Local.m_flDuckJumpTime > 0.0f )
 		return false;
 
+	PreventBunnyJumping();
 
 	// In the air now.
     SetGroundEntity( NULL );
-	
+
+	if ( !bWallJump )
+		player->PlayStepSound( (Vector &)mv->GetAbsOrigin(), player->m_pSurfaceData, 1.0, true );
+
 	player->PlayStepSound( (Vector &)mv->GetAbsOrigin(), player->m_pSurfaceData, 1.0, true );
 	
 	MoveHelper()->PlayerSetAnimation( PLAYER_JUMP );
@@ -2427,22 +2461,7 @@ bool CGameMovement::CheckJumpButton( void )
 		flGroundFactor = player->m_pSurfaceData->game.jumpFactor; 
 	}
 
-	float flMul;
-	if ( g_bMovementOptimizations )
-	{
-#if defined(HL2_DLL) || defined(HL2_CLIENT_DLL)
-		Assert( GetCurrentGravity() == 600.0f );
-		flMul = 160.0f;	// approx. 21 units.
-#else
-		Assert( GetCurrentGravity() == 800.0f );
-		flMul = 268.3281572999747f;
-#endif
-
-	}
-	else
-	{
-		flMul = sqrt(2 * GetCurrentGravity() * GAMEMOVEMENT_JUMP_HEIGHT);
-	}
+	float flMul = sqrt(2 * GetCurrentGravity() * (GAMEMOVEMENT_JUMP_HEIGHT / (!bWallJump ? 1 : 2)));
 
 	// Acclerate upward
 	// If we are ducking...
@@ -2527,6 +2546,24 @@ bool CGameMovement::CheckJumpButton( void )
 	return true;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CGameMovement::PreventBunnyJumping()
+{
+	float maxspeed = mv->m_flMaxSpeed;
+
+	// Current player speed
+	float spd = mv->m_vecVelocity.Length();
+	if ( spd <= maxspeed )
+		return;
+
+	// Apply this cropping fraction to velocity
+	float fraction = ( maxspeed / spd );
+
+
+	mv->m_vecVelocity *= fraction;
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -2839,10 +2876,8 @@ inline bool CGameMovement::OnLadder( trace_t &trace )
 // HPE_BEGIN
 // [sbodenbender] make ladders easier to climb in cstrike
 //=============================================================================
-#if defined (CSTRIKE_DLL)
 ConVar sv_ladder_dampen ( "sv_ladder_dampen", "0.2", FCVAR_REPLICATED, "Amount to dampen perpendicular movement on a ladder", true, 0.0f, true, 1.0f );
 ConVar sv_ladder_angle( "sv_ladder_angle", "-0.707", FCVAR_REPLICATED, "Cos of angle of incidence to ladder perpendicular for applying ladder_dampen", true, -1.0f, true, 1.0f );
-#endif
 //=============================================================================
 // HPE_END
 //=============================================================================
@@ -2976,7 +3011,6 @@ bool CGameMovement::LadderMove( void )
 			// HPE_BEGIN
 			// [sbodenbender] make ladders easier to climb in cstrike
 			//=============================================================================
-#if defined (CSTRIKE_DLL)
 			// break lateral into direction along tmp (up the ladder) and direction along perp (perpendicular to ladder)
 			float tmpDist = DotProduct ( tmp, lateral );
 			float perpDist = DotProduct ( perp, lateral );
@@ -2990,7 +3024,6 @@ bool CGameMovement::LadderMove( void )
 
 			if (angleDot < sv_ladder_angle.GetFloat())
 				lateral = (tmp * tmpDist) + (perp * sv_ladder_dampen.GetFloat() * perpDist);
-#endif // CSTRIKE_DLL
 			//=============================================================================
 			// HPE_END
 			//=============================================================================
@@ -4295,11 +4328,47 @@ void CGameMovement::SetDuckedEyeOffset( float duckFraction )
 //          bInAir - is the player in air
 //    NOTE: Only crop player speed once.
 //-----------------------------------------------------------------------------
+void CGameMovement::HandleReloadingSpeedCrop( void )
+{
+	if ( !( m_iSpeedCropped & SPEED_CROPPED_RELOAD ) && ( ( player->GetActiveWeapon() && player->GetActiveWeapon()->m_bInReload ) || ( player->GetActiveWeapon2() && player->GetActiveWeapon2()->m_bInReload ) ) )
+	{
+		float frac = 0.65f;
+		mv->m_flForwardMove	*= frac;
+		mv->m_flSideMove	*= frac;
+		mv->m_flUpMove		*= frac;
+		m_iSpeedCropped		|= SPEED_CROPPED_RELOAD;
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Crop the speed of the player when ducking and on the ground.
+//   Input: bInDuck - is the player already ducking
+//          bInAir - is the player in air
+//    NOTE: Only crop player speed once.
+//-----------------------------------------------------------------------------
+void CGameMovement::HandleIronsightSpeedCrop( void )
+{
+	if ( !( m_iSpeedCropped & SPEED_CROPPED_IRONSIGHT ) && ( ( player->GetActiveWeapon() && player->GetActiveWeapon()->IsIronsighted() ) || ( player->GetActiveWeapon2() && player->GetActiveWeapon2()->IsIronsighted() ) ) )
+	{
+		float frac = 0.62f;
+		mv->m_flForwardMove	*= frac;
+		mv->m_flSideMove	*= frac;
+		mv->m_flUpMove		*= frac;
+		m_iSpeedCropped		|= SPEED_CROPPED_IRONSIGHT;
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Crop the speed of the player when ducking and on the ground.
+//   Input: bInDuck - is the player already ducking
+//          bInAir - is the player in air
+//    NOTE: Only crop player speed once.
+//-----------------------------------------------------------------------------
 void CGameMovement::HandleDuckingSpeedCrop( void )
 {
 	if ( !( m_iSpeedCropped & SPEED_CROPPED_DUCK ) && ( player->GetFlags() & FL_DUCKING ) && ( player->GetGroundEntity() != NULL ) )
 	{
-		float frac = 0.33333333f;
+		float frac = 0.45f;
 		mv->m_flForwardMove	*= frac;
 		mv->m_flSideMove	*= frac;
 		mv->m_flUpMove		*= frac;
@@ -4361,6 +4430,12 @@ void CGameMovement::Duck( void )
 	// Handle death.
 	if ( IsDead() )
 		return;
+
+	// Slow down reloading players.
+	HandleReloadingSpeedCrop();
+	
+	// Slow down ironsighted players.
+	HandleIronsightSpeedCrop();
 
 	// Slow down ducked players.
 	HandleDuckingSpeedCrop();

@@ -1934,6 +1934,9 @@ bool C_RopeKeyframe::CalculateEndPointAttachment( C_BaseEntity *pEnt, int iAttac
 		{
 			C_BaseAnimating *pModel = pPlayer->GetRenderedWeaponModel();
 			if ( !pModel )
+				return pModel = pPlayer->GetRenderedWeaponModel2();
+
+			if ( !pModel )
 				return false;
 
 			int iAttachmentBuf = pModel->LookupAttachment( "buff_attach" );

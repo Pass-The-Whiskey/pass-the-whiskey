@@ -333,6 +333,7 @@ protected:
 
 	// Weapon data.
 	CHandle<CBaseCombatWeapon>	m_hActiveWeapon;
+	CHandle<CBaseCombatWeapon>	m_hActiveWeapon2;
 
 	// Ground speed interpolators.
 #ifdef CLIENT_DLL

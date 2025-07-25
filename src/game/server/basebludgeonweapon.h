@@ -37,8 +37,10 @@ public:
 	virtual Activity	GetPrimaryAttackActivity( void )	{	return	ACT_VM_HITCENTER;	}
 	virtual Activity	GetSecondaryAttackActivity( void )	{	return	ACT_VM_HITCENTER2;	}
 
-	virtual	float	GetFireRate( void )								{	return	0.2f;	}
-	virtual float	GetRange( void )								{	return	32.0f;	}
+	virtual	float	GetFireRate( void )						{	return	GetWpnData().m_flTimeFireDelay;	}
+	virtual	float	GetMissFireRate( void )					{	return	GetWpnData().m_flTimeMissFireDelay;	}
+	virtual float	GetRange( void )						{	return	GetWpnData().m_flRange;	}
+
 	virtual	float	GetDamageForActivity( Activity hitActivity )	{	return	1.0f;	}
 
 	virtual int		CapabilitiesGet( void );

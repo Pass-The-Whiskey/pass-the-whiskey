@@ -5,8 +5,8 @@
 //-----------------------------------------------------------------------------
 
 $Macro SRCDIR		"..\.."
-$Macro GAMENAME 	"hl2mp" [!$SOURCESDK]
-$Macro GAMENAME 	"mod_hl2mp" [$SOURCESDK]
+$Macro GAMENAME 	"ptw" [!$SOURCESDK]
+$Macro GAMENAME 	"ptw" [$SOURCESDK]
 
 $Include "$SRCDIR\game\client\client_base.vpc"
 
@@ -15,7 +15,7 @@ $Configuration
 	$Compiler
 	{
 		$AdditionalIncludeDirectories		"$BASE;hl2mp\ui,.\hl2mp,$SRCDIR\game\shared\hl2mp,.\hl2,.\hl2\elements,$SRCDIR\game\shared\hl2"
-		$PreprocessorDefinitions			"$BASE;HL2MP;HL2_CLIENT_DLL;NEXT_BOT"
+		$PreprocessorDefinitions			"$BASE;HL2MP;HL2_CLIENT_DLL;NEXT_BOT;GLOWS_ENABLE"
 	}
 }
 
@@ -30,6 +30,7 @@ $Project "Client (HL2MP)"
 		$File	"c_team_train_watcher.cpp"
 		$File	"c_team_train_watcher.h"
 		$File	"hud_voicestatus.cpp"
+		$File	"voice_menu.cpp"
 		$File	"$SRCDIR\game\shared\predicted_viewmodel.cpp"
 		$File	"$SRCDIR\game\shared\predicted_viewmodel.h"
 		$File	"$SRCDIR\game\shared\teamplay_round_timer.cpp"
@@ -39,6 +40,39 @@ $Project "Client (HL2MP)"
 		{
 			$File	"NextBot\C_NextBot.cpp"
 			$File	"NextBot\C_NextBot.h"
+		}
+
+		$Folder "Fistful of Frags"
+		{
+			$Folder	"Weapons"
+			{
+				$File	"$SRCDIR\game\shared\fof\fof_weapon_bow.cpp"
+				$File	"$SRCDIR\game\shared\fof\fof_weapon_fists.cpp"
+				$File	"$SRCDIR\game\shared\fof\fof_weapon_fists.h"
+				$File	"$SRCDIR\game\shared\fof\fof_weapon_hammer.cpp"
+				$File	"$SRCDIR\game\shared\fof\fof_weapon_hammer.h"
+				$File	"$SRCDIR\game\shared\fof\fof_weapon_melee.cpp"
+				$File	"$SRCDIR\game\shared\fof\fof_weapon_melee.h"
+				$File	"$SRCDIR\game\shared\fof\fof_weapon_revolver.cpp"
+				$File	"$SRCDIR\game\shared\fof\fof_weapon_shotgun.cpp"
+			}
+			$Folder	"vgui"
+			{
+				$File	"fof/vgui/fof_imagepanel.cpp"
+				$File	"fof/vgui/fof_imagepanel.h"
+			}
+			$File	"fof/c_fof_crate.cpp"
+			$File	"fof/fof_equipmenticon.cpp"
+			$File	"fof/fof_equipmenticon.h"
+			$File	"fof/fof_cratemenu.cpp"
+			$File	"fof/fof_cratemenu.h"
+			$File	"fof/fof_equipmenu.cpp"
+			$File	"fof/fof_equipmenu.h"
+			$File	"fof/fof_hud_ammostatus.cpp"
+			$File	"fof/fof_hud_notorietystatus.cpp"
+			$File	"fof/fof_hud_playerstatus.cpp"
+			$File	"fof/fof_weaponwheel.cpp"
+			$File	"fof/fof_weaponwheel.h"
 		}
 
 		$Folder	"HL2 DLL"
@@ -175,6 +209,14 @@ $Project "Client (HL2MP)"
 				$File	"hl2mp\ui\hl2mptextwindow.h"
 				$File	"hl2mp\hud_deathnotice.cpp"
 			}
+		}
+		
+		$Folder "Steam Workshop"
+		{
+			$File	"$SRCDIR\game\shared\workshop\ugc_utils.h"
+			$File	"$SRCDIR\game\shared\workshop\ugc_utils.cpp"
+			$File	"$SRCDIR\game\client\bsp_utils.cpp"
+			$File	"$SRCDIR\game\client\bsp_utils.h"
 		}
 	}
 }

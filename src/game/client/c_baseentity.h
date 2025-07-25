@@ -203,7 +203,7 @@ public:
 	virtual void					DoImpactEffect( trace_t &tr, int nDamageType );
 	virtual void					MakeTracer( const Vector &vecTracerSrc, const trace_t &tr, int iTracerType );
 	virtual int						GetTracerAttachment( void );
-	void							ComputeTracerStartPosition( const Vector &vecShotSrc, Vector *pVecTracerStart );
+	void							ComputeTracerStartPosition( const Vector &vecShotSrc, Vector *pVecTracerStart, CBaseEntity* pWeapon = NULL );
 	void							TraceBleed( float flDamage, const Vector &vecDir, trace_t *ptr, int bitsDamageType );
 	virtual int						BloodColor();
 	virtual const char*				GetTracerType();
@@ -1346,6 +1346,7 @@ public:
 	char							m_lifeState;
 
 	int								m_iHealth;
+	int								m_iMaxHealth;
 
 	// was pev->speed
 	float							m_flSpeed;

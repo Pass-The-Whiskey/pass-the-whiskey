@@ -47,7 +47,7 @@ public:
 	virtual const	WeaponProficiencyInfo_t *GetProficiencyValues();
 	static const	WeaponProficiencyInfo_t *GetDefaultProficiencyValues();
 
-	virtual void	ItemHolsterFrame( void );
+	virtual CBaseEntity		*FireProjectile() OVERRIDE;
 
 protected:
 
@@ -59,5 +59,18 @@ private:
 	
 	CBaseHL2MPCombatWeapon( const CBaseHL2MPCombatWeapon & );
 };
+
+#define CREATE_SIMPLE_WEAPON_TABLE( WpnName, entityname )			\
+																	\
+	IMPLEMENT_NETWORKCLASS_ALIASED( WpnName, DT_##WpnName )	\
+															\
+	BEGIN_NETWORK_TABLE( C##WpnName, DT_##WpnName )			\
+	END_NETWORK_TABLE()										\
+															\
+	BEGIN_PREDICTION_DATA( C##WpnName )						\
+	END_PREDICTION_DATA()									\
+															\
+	LINK_ENTITY_TO_CLASS( entityname, C##WpnName );			\
+	PRECACHE_WEAPON_REGISTER( entityname );
 
 #endif // WEAPON_BASEHL2MPCOMBATWEAPON_SHARED_H

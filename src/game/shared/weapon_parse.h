@@ -41,6 +41,7 @@ typedef enum {
 	DEPLOY,
 
 	// Add new shoot sound types here
+	PRIME,
 
 	NUM_SHOOT_SOUND_TYPES,
 } WeaponSound_t;
@@ -104,13 +105,63 @@ public:
 
 	int						iAmmoType;
 	int						iAmmo2Type;
-	bool					m_bMeleeWeapon;		// Melee weapons can always "fire" regardless of ammo.
 
 	// This tells if the weapon was built right-handed (defaults to true).
 	// This helps cl_righthand make the decision about whether to flip the model or not.
-	bool					m_bBuiltRightHanded;
-	bool					m_bAllowFlipping;	// False to disallow flipping the model, regardless of whether
-												// it is built left or right handed.
+	bool					m_bBuiltRightHanded;			// This tells if the weapon was built right-handed (defaults to true).
+	bool					m_bAllowFlipping;				// False to disallow flipping the model, regardless of whether it is built left or right handed.
+
+	int						m_nDamage;
+	int						m_nDamageArmor;
+
+	int						m_nAmmoPerShot;
+	int						m_nBulletsPerShot;
+	
+	float					m_flRange;	
+	float					m_flPunchAngle;
+	
+	float					m_flTimeToFireDelay;			// Time to delay before firing - CS:GO
+	float					m_flTimeFireDelay;				// Time to delay between firing
+	float					m_flTimeMissFireDelay;			// Time to delay between firing when missing (melee only)
+	float					m_flTimeThrowDelay;				// Time to delay between firing when throwing (melee only)
+	
+	float					m_flTimeIdle;					// Time to idle after firing
+	float					m_flTimeIdleEmpty;				// Time to idle after firing last bullet in clip
+	
+	float					m_flTimeReloadStart;			// Time to start into a reload (ie. shotgun)
+	float					m_flTimeReload;					// Time to reload
+	
+	bool					m_bDrawCrosshair;				// Should the weapon draw a crosshair
+	
+	int						m_iProjectile;					// The type of projectile this mode fires
+	float					m_flProjectileSpeed;			// Start speed for projectiles
+	float					m_flProjectileGravity;			// gravity for projectiles
+
+	float					m_flMaxSpeed;
+
+	bool					m_bMeleeWeapon;					// Melee weapons can always "fire" regardless of ammo.
+	float					m_flPrimarySmackDelay;			// how long after swing should damage happen for melee weapons primary attack
+	float					m_flSecondarySmackDelay;		// how long after swing should damage happen for melee weapons secondary attack
+
+	bool					m_bReloadsSingly;
+
+	bool					m_bHasIronsights;
+
+	Vector					m_vecIronsightPosOffset;
+	Vector					m_vecFanningPosOffset;
+
+	float					m_flSpreadCrouch;
+	float					m_flSpreadIdle;
+	float					m_flSpreadWalk;
+	float					m_flSpreadRun;
+	float					m_flSpreadJump;
+	float					m_flSpreadSpeed;
+
+	int						m_iIndicatorType;
+
+	bool					m_bInvertRotation;
+	int						m_iCylinderRadius;
+	int						m_iBulletRadius;
 
 // CLIENT DLL
 	// Sprite data, read from the data file

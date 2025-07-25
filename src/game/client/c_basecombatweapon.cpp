@@ -34,6 +34,19 @@ C_BaseCombatWeapon *GetActiveWeapon( void )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Gets the local client's active weapon, if any.
+//-----------------------------------------------------------------------------
+C_BaseCombatWeapon *GetActiveWeapon2( void )
+{
+	C_BasePlayer *player = C_BasePlayer::GetLocalPlayer();
+
+	if ( !player )
+		return NULL;
+
+	return player->GetActiveWeapon2();
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void C_BaseCombatWeapon::SetDormant( bool bDormant )
@@ -65,7 +78,7 @@ void C_BaseCombatWeapon::NotifyShouldTransmit( ShouldTransmitState_t state )
 	{
 		if( m_iState == WEAPON_IS_CARRIED_BY_PLAYER )
 		{
-			if( GetOwner() && GetOwner()->GetActiveWeapon() == this )
+			if( GetOwner() && ( GetOwner()->GetActiveWeapon() == this || GetOwner()->GetActiveWeapon2() == this ) )
 			{
 				// Restore the Activeness of the weapon if we client-twiddled it off in the first case above.
 				m_iState = WEAPON_IS_ACTIVE;
@@ -261,44 +274,44 @@ void C_BaseCombatWeapon::DrawCrosshair()
 	}		 
 */
 
-	CHudCrosshair *pCrosshair = GET_HUDELEMENT( CHudCrosshair );
-	if ( !pCrosshair )
-		return;
+	//CHudCrosshair *pCrosshair = GET_HUDELEMENT( CHudCrosshair );
+	//if ( !pCrosshair )
+	//	return;
 
-	// Find out if this weapon's auto-aimed onto a target
-	bool bOnTarget = ( m_iState == WEAPON_IS_ONTARGET );
-	
-	if ( player->GetFOV() >= 90 )
-	{ 
-		// normal crosshairs
-		if ( bOnTarget && GetWpnData().iconAutoaim )
-		{
-			clr[3] = 255;
+	//// Find out if this weapon's auto-aimed onto a target
+	//bool bOnTarget = ( m_iState == WEAPON_IS_ONTARGET );
+	//
+	//if ( player->GetFOV() >= 90 )
+	//{ 
+	//	// normal crosshairs
+	//	if ( bOnTarget && GetWpnData().iconAutoaim )
+	//	{
+	//		clr[3] = 255;
 
-			pCrosshair->SetCrosshair( GetWpnData().iconAutoaim, clr );
-		}
-		else if ( GetWpnData().iconCrosshair )
-		{
-			clr[3] = 255;
-			pCrosshair->SetCrosshair( GetWpnData().iconCrosshair, clr );
-		}
-		else
-		{
-			pCrosshair->ResetCrosshair();
-		}
-	}
-	else
-	{ 
-		Color white( 255, 255, 255, 255 );
+	//		pCrosshair->SetCrosshair( GetWpnData().iconAutoaim, clr );
+	//	}
+	//	else if ( GetWpnData().iconCrosshair )
+	//	{
+	//		clr[3] = 255;
+	//		pCrosshair->SetCrosshair( GetWpnData().iconCrosshair, clr );
+	//	}
+	//	else
+	//	{
+	//		pCrosshair->ResetCrosshair();
+	//	}
+	//}
+	//else
+	//{ 
+	//	Color white( 255, 255, 255, 255 );
 
-		// zoomed crosshairs
-		if (bOnTarget && GetWpnData().iconZoomedAutoaim)
-			pCrosshair->SetCrosshair(GetWpnData().iconZoomedAutoaim, white);
-		else if ( GetWpnData().iconZoomedCrosshair )
-			pCrosshair->SetCrosshair( GetWpnData().iconZoomedCrosshair, white );
-		else
-			pCrosshair->ResetCrosshair();
-	}
+	//	// zoomed crosshairs
+	//	if (bOnTarget && GetWpnData().iconZoomedAutoaim)
+	//		pCrosshair->SetCrosshair(GetWpnData().iconZoomedAutoaim, white);
+	//	else if ( GetWpnData().iconZoomedCrosshair )
+	//		pCrosshair->SetCrosshair( GetWpnData().iconZoomedCrosshair, white );
+	//	else
+	//		pCrosshair->ResetCrosshair();
+	//}
 }
 
 //-----------------------------------------------------------------------------

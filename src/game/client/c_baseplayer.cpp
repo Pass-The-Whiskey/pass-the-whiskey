@@ -288,6 +288,7 @@ END_RECV_TABLE()
 		RecvPropEHandle( RECVINFO(m_hUseEntity) ),
 
 		RecvPropInt		(RECVINFO(m_iHealth)),
+		RecvPropInt		(RECVINFO(m_iMaxHealth)),
 		RecvPropInt		(RECVINFO(m_lifeState)),
 
 		RecvPropInt		(RECVINFO(m_iBonusProgress)),
@@ -370,6 +371,7 @@ BEGIN_PREDICTION_DATA( C_BasePlayer )
 	DEFINE_PRED_FIELD( m_hVehicle, FIELD_EHANDLE, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD_TOL( m_flMaxspeed, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, 0.5f ),
 	DEFINE_PRED_FIELD( m_iHealth, FIELD_INTEGER, FTYPEDESC_INSENDTABLE | FTYPEDESC_ONLY_ERROR_IF_ABOVE_ZERO_TO_ZERO_OR_BELOW_ETC ),
+	DEFINE_PRED_FIELD( m_iMaxHealth, FIELD_INTEGER, FTYPEDESC_INSENDTABLE | FTYPEDESC_ONLY_ERROR_IF_ABOVE_ZERO_TO_ZERO_OR_BELOW_ETC ),
 	DEFINE_PRED_FIELD( m_iBonusProgress, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_iBonusChallenge, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_fOnTarget, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
@@ -1209,6 +1211,11 @@ bool C_BasePlayer::CreateMove( float flInputSampleTime, CUserCmd *pCmd )
 		{
 			pWeapon->CreateMove( flInputSampleTime, pCmd, m_vecOldViewAngles );
 		}
+		CBaseCombatWeapon *pWeapon2 = GetActiveWeapon2();
+		if ( pWeapon2 )
+		{
+			pWeapon2->CreateMove( flInputSampleTime, pCmd, m_vecOldViewAngles );
+		}
 	}
 
 	// If the frozen flag is set, prevent view movement (server prevents the rest of the movement)
@@ -1868,6 +1875,19 @@ C_BaseAnimating* C_BasePlayer::GetRenderedWeaponModel()
 	}
 }
 
+C_BaseAnimating* C_BasePlayer::GetRenderedWeaponModel2()
+{
+	// Attach to either their weapon model or their view model.
+	if ( ShouldDrawLocalPlayer() || !IsLocalPlayer() )
+	{
+		return GetActiveWeapon2();
+	}
+	else
+	{
+		return GetViewModel( 1 );
+	}
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Gets a pointer to the local player, if it exists yet.
 // Output : C_BasePlayer
@@ -2233,6 +2253,24 @@ C_BaseCombatWeapon	*C_BasePlayer::GetActiveWeapon( void ) const
 	}
 
 	return fromPlayer->C_BaseCombatCharacter::GetActiveWeapon();
+}
+
+C_BaseCombatWeapon	*C_BasePlayer::GetActiveWeapon2( void ) const
+{
+	const C_BasePlayer *fromPlayer = this;
+
+	// if localplayer is in InEye spectator mode, return weapon on chased player
+	if ( (fromPlayer == GetLocalPlayer()) && ( GetObserverMode() == OBS_MODE_IN_EYE) )
+	{
+		C_BaseEntity *target =  GetObserverTarget();
+
+		if ( target && target->IsPlayer() )
+		{
+			fromPlayer = ToBasePlayer( target );
+		}
+	}
+
+	return fromPlayer->C_BaseCombatCharacter::GetActiveWeapon2();
 }
 
 //=========================================================

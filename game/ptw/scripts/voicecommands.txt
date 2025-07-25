@@ -1,0 +1,180 @@
+
+// You can define up to 9 menus, each with up to 9 items
+
+
+//The parameters for an item:
+
+// "concept" - the AI concept to speak when the player chooses this item
+
+// "menu_label"    - localizable string to appear in the menu, add the matching string in tf_english
+//				   - will appear as: '<item number>. <localized string>', eg "#voice_menu_gogogo" leads to '1. Go Go Go'
+//						where ' "voice_menu_gogogo"  "Go Go Go" ' appears in tf_english
+
+
+
+
+"voicemenus"
+{
+	"menu_1"
+	{
+		"item_1"
+		{
+			"concept"						"TLK_PLAYER_ATTACK"		
+			"menu_label"					"#Command1"
+			"activity"						"ACT_MP_GESTURE_VC_HANDMOUTH"
+		}
+		
+		"item_2"
+		{
+			"concept"						"TLK_PLAYER_GO"		
+			"menu_label"					"#Command2"
+			"activity"						"ACT_MP_GESTURE_VC_THUMBSUP"
+		}
+		
+		"item_3"
+		{
+			"concept"						"TLK_PLAYER_RETREAT"	
+			"menu_label"					"#Command3"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_4"
+		{
+			"concept"						"TLK_PLAYER_OBJECTIVES"		
+			"menu_label"					"#Command4"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_5"
+		{
+			"concept"						"TLK_PLAYER_COVER"		
+			"menu_label"					"#Command5"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_6"
+		{
+			"concept"						"TLK_PLAYER_WAIT"		
+			"menu_label"					"#Command6"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+	}
+
+	"menu_2"
+	{
+		"item_1"
+		{
+			"concept"						"TLK_PLAYER_YES"		
+			"menu_label"					"#Alert1"
+			"activity"						"ACT_MP_GESTURE_VC_HANDMOUTH"
+		}
+		
+		"item_2"
+		{
+			"concept"						"TLK_PLAYER_NO"		
+			"menu_label"					"#Alert2"
+			"activity"						"ACT_MP_GESTURE_VC_THUMBSUP"
+		}
+		
+		"item_3"
+		{
+			"concept"						"TLK_PLAYER_ENEMY_SPOTTED"	
+			"menu_label"					"#Alert3"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_4"
+		{
+			"concept"						"TLK_PLAYER_WANT_WHISKEY"		
+			"menu_label"					"#Alert4"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_5"
+		{
+			"concept"						"TLK_PLAYER_RELOADING"		
+			"menu_label"					"#Alert5"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_6"
+		{
+			"concept"						"TLK_PLAYER_NO_ENEMY"		
+			"menu_label"					"#Alert6"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_7"
+		{
+			"concept"						"TLK_PLAYER_WANTS_WEAPON"		
+			"menu_label"					"#Alert7"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+	}
+
+	"menu_3"
+	{
+		"item_1"
+		{
+			"concept"						"TLK_PLAYER_LAUGH"		
+			"menu_label"					"#Taunt1"
+			"activity"						"ACT_MP_GESTURE_VC_HANDMOUTH"
+		}
+		
+		"item_2"
+		{
+			"concept"						"TLK_PLAYER_DRAW"		
+			"menu_label"					"#Taunt2"
+			"activity"						"ACT_MP_GESTURE_VC_THUMBSUP"
+		}
+		
+		"item_3"
+		{
+			"concept"						"TLK_PLAYER_FIGHTING_TALK"	
+			"menu_label"					"#Taunt3"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_4"
+		{
+			"concept"						"TLK_PLAYER_BRAG"		
+			"menu_label"					"#Taunt4"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_5"
+		{
+			"concept"						"TLK_PLAYER_HOWL"		
+			"menu_label"					"#Taunt5"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_6"
+		{
+			"concept"						"TLK_PLAYER_COWARD"		
+			"menu_label"					"#Taunt6"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_7"
+		{
+			"concept"						"TLK_PLAYER_FISTFIGHT"		
+			"menu_label"					"#Taunt7"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_8"
+		{
+			"concept"						"TLK_PLAYER_MY_GOLD"		
+			"menu_label"					"#Taunt8"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+		
+		"item_9"
+		{
+			"concept"						"TLK_PLAYER_SHUT_UP"		
+			"menu_label"					"#Taunt9"
+			"activity"						"ACT_MP_GESTURE_VC_FINGERPOINT"
+		}
+	}
+}

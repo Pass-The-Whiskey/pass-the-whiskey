@@ -124,12 +124,6 @@ void CAI_AllyManager::CountAllies( int *pTotal, int *pMedics )
 {
 	(*pTotal) = (*pMedics) = 0;
 
-	if ( !AI_IsSinglePlayer() )
-	{
-		// @TODO (toml 10-22-04): no MP support right now
-		return;
-	}
-
 	const Vector &	vPlayerPos = UTIL_GetLocalPlayer()->GetAbsOrigin();
 	CAI_BaseNPC **	ppAIs 	= g_AI_Manager.AccessAIs();
 	int 			nAIs 	= g_AI_Manager.NumAIs();

@@ -500,7 +500,6 @@ IMPLEMENT_ACTTABLE(CWeaponCrossbow);
 //-----------------------------------------------------------------------------
 CWeaponCrossbow::CWeaponCrossbow( void )
 {
-	m_bReloadsSingly	= true;
 	m_bFiresUnderwater	= true;
 	m_bInZoom			= false;
 	m_bMustReload		= false;

@@ -1327,7 +1327,6 @@ IMPLEMENT_ACTTABLE(CWeaponRPG);
 //-----------------------------------------------------------------------------
 CWeaponRPG::CWeaponRPG()
 {
-	m_bReloadsSingly = true;
 	m_bInitialStateUpdate= false;
 	m_bHideGuiding = false;
 	m_bGuiding = false;

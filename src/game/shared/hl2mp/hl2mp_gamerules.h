@@ -28,8 +28,11 @@
 
 enum
 {
-	TEAM_COMBINE = 2,
-	TEAM_REBELS,
+	TEAM_VIGILANTES = 2,
+	TEAM_DESPERADOS,
+	TEAM_BANDITOS,
+	TEAM_RANGERS,
+	TEAM_COUNT,
 };
 
 
@@ -136,6 +139,10 @@ public:
 	void    CheckChatForReadySignal( CHL2MP_Player *pPlayer, const char *chatmsg );
 	const char *GetChatFormat( bool bTeamOnly, CBasePlayer *pPlayer );
 
+	void InitDefaultAIRelationships( void );
+
+	float FlPlayerFallDamage( CBasePlayer *pPlayer ) OVERRIDE;
+
 #endif
 
 	bool IsOfficialMap( void );
@@ -156,6 +163,10 @@ public:
 private:
 	
 	CNetworkVar( bool, m_bTeamPlayEnabled );
+
+	CNetworkVar( int, m_iCurrentTeamCount );
+	CNetworkVar( int, m_iCurrentGameMode );
+
 	CNetworkVar( float, m_flGameStartTime );
 	CUtlVector<EHANDLE> m_hRespawnableItemsAndWeapons;
 	float m_tmNextPeriodicThink;

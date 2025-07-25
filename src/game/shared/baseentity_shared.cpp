@@ -1613,7 +1613,10 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	{
 		CBasePlayer *pPlayer = dynamic_cast<CBasePlayer*>(this);
 
-		int rumbleEffect = pPlayer->GetActiveWeapon()->GetRumbleEffect();
+		int rumbleEffect = RUMBLE_INVALID;
+
+		if ( info.m_pWeapon && info.m_pWeapon->MyCombatWeaponPointer() )
+			rumbleEffect = info.m_pWeapon->MyCombatWeaponPointer()->GetRumbleEffect();
 
 		if( rumbleEffect != RUMBLE_INVALID )
 		{
@@ -1958,7 +1961,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 			if ( bDoServerEffects == true )
 			{
 				Vector vecTracerSrc = vec3_origin;
-				ComputeTracerStartPosition( info.m_vecSrc, &vecTracerSrc );
+				ComputeTracerStartPosition( info.m_vecSrc, &vecTracerSrc, info.m_pWeapon );
 
 				trace_t Tracer;
 				Tracer = tr;
@@ -1978,7 +1981,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 				{
 					Vector vTransformedIntersection;
 					UTIL_Portal_PointTransform( pShootThroughPortal->MatrixThisToLinked(), Tracer.endpos, vTransformedIntersection );
-					ComputeTracerStartPosition( vTransformedIntersection, &vecTracerSrc );
+					ComputeTracerStartPosition( vTransformedIntersection, &vecTracerSrc, info.m_pWeapon );
 
 					Tracer.endpos = vecTracerDest;
 
@@ -2018,7 +2021,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 #if defined( HL2MP ) && defined( GAME_DLL )
 	if ( bDoServerEffects == false )
 	{
-		TE_HL2MPFireBullets( entindex(), tr.startpos, info.m_vecDirShooting, info.m_iAmmoType, iEffectSeed, info.m_iShots, info.m_vecSpread.x, bDoTracers, bDoImpacts );
+		TE_HL2MPFireBullets( entindex(), tr.startpos, info.m_vecDirShooting, info.m_iAmmoType, iEffectSeed, info.m_iShots, info.m_vecSpread.x, bDoTracers, bDoImpacts, (MyCombatCharacterPointer() && MyCombatCharacterPointer()->GetActiveWeapon2() == info.m_pWeapon) );
 	}
 #endif
 
@@ -2029,7 +2032,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	{
 		CBasePlayer *pPlayer = static_cast< CBasePlayer * >( this );
 		CTakeDamageInfo dmgInfo( this, pAttacker, flCumulativeDamage, nDamageType );
-		gamestats->Event_WeaponHit( pPlayer, info.m_bPrimaryAttack, pPlayer->GetActiveWeapon()->GetClassname(), dmgInfo );
+		gamestats->Event_WeaponHit( pPlayer, info.m_bPrimaryAttack, info.m_pWeapon ? info.m_pWeapon->GetClassname() : "world", dmgInfo);
 	}
 #endif
 }
@@ -2161,7 +2164,7 @@ void CBaseEntity::DoImpactEffect( trace_t &tr, int nDamageType )
 //-----------------------------------------------------------------------------
 // Computes the tracer start position
 //-----------------------------------------------------------------------------
-void CBaseEntity::ComputeTracerStartPosition( const Vector &vecShotSrc, Vector *pVecTracerStart )
+void CBaseEntity::ComputeTracerStartPosition( const Vector &vecShotSrc, Vector *pVecTracerStart, CBaseEntity* pWeapon )
 {
 #ifndef HL2MP
 	if ( g_pGameRules->IsMultiplayer() )
@@ -2188,14 +2191,19 @@ void CBaseEntity::ComputeTracerStartPosition( const Vector &vecShotSrc, Vector *
 		CBaseCombatCharacter *pBCC = MyCombatCharacterPointer();
 		if ( pBCC != NULL )
 		{
-			CBaseCombatWeapon *pWeapon = pBCC->GetActiveWeapon();
+			CBaseCombatWeapon* pCombatWeapon = static_cast< CBaseCombatWeapon* >( pWeapon );
 
-			if ( pWeapon != NULL )
+			if ( pCombatWeapon == NULL )
+			{
+				pCombatWeapon = pBCC->GetActiveWeapon();
+			}
+
+			if ( pCombatWeapon != NULL )
 			{
 				Vector vecMuzzle;
 				QAngle vecMuzzleAngles;
 
-				if ( pWeapon->GetAttachment( 1, vecMuzzle, vecMuzzleAngles ) )
+				if ( pCombatWeapon->GetAttachment( 1, vecMuzzle, vecMuzzleAngles ) )
 				{
 					*pVecTracerStart = vecMuzzle;
 				}

@@ -59,11 +59,11 @@ int Bot_GetTeamByName( const char *string )
 	int iTeam = TEAM_UNASSIGNED;
 	if ( !stricmp( string, "rebels" ) )
 	{
-		iTeam = TEAM_REBELS;
+		iTeam = TEAM_DESPERADOS;
 	}
 	else if ( !stricmp( string, "combine" ) )
 	{
-		iTeam = TEAM_COMBINE;
+		iTeam = TEAM_VIGILANTES;
 	}
 
 	return iTeam;
@@ -197,10 +197,10 @@ CON_COMMAND_F( hl2mp_bot_add, "Add a bot.", FCVAR_GAMEDLL )
 
 	if ( HL2MPRules()->IsTeamplay() && iTeam == TEAM_UNASSIGNED )
 	{
-		CTeam* pRebels = GetGlobalTeam( TEAM_REBELS );
-		CTeam* pCombine = GetGlobalTeam( TEAM_COMBINE );
+		CTeam* pRebels = GetGlobalTeam( TEAM_DESPERADOS );
+		CTeam* pCombine = GetGlobalTeam( TEAM_VIGILANTES );
 
-		iTeam = pRebels->GetNumPlayers() < pCombine->GetNumPlayers() ? TEAM_REBELS : TEAM_COMBINE;
+		iTeam = pRebels->GetNumPlayers() < pCombine->GetNumPlayers() ? TEAM_DESPERADOS : TEAM_VIGILANTES;
 	}
 
 	char name[256];
@@ -245,7 +245,7 @@ CON_COMMAND_F( hl2mp_bot_add, "Add a bot.", FCVAR_GAMEDLL )
 			{
 				pszModel = g_ppszRandomModels[ RandomInt( 0, ARRAYSIZE( g_ppszRandomModels ) ) ];
 			}
-			else if ( iTeam == TEAM_COMBINE )
+			else if ( iTeam == TEAM_VIGILANTES )
 			{
 				pszModel = g_ppszRandomCombineModels[RandomInt( 0, ARRAYSIZE( g_ppszRandomCombineModels ) )];
 			}
@@ -293,11 +293,11 @@ CON_COMMAND_F( hl2mp_bot_kick, "Remove a HL2MPBot by name, or all bots (\"all\")
 		// each argument could be a classname, a team, or a count
 		if ( FStrEq( args.Arg(i), "rebels" ) )
 		{
-			iTeam = TEAM_REBELS;
+			iTeam = TEAM_DESPERADOS;
 		}
 		else if ( FStrEq( args.Arg(i), "combine" ) )
 		{
-			iTeam = TEAM_COMBINE;
+			iTeam = TEAM_VIGILANTES;
 		}
 		else if ( FStrEq( args.Arg(i), "all" ) )
 		{
@@ -372,11 +372,11 @@ CON_COMMAND_F( hl2mp_bot_kill, "Kill a HL2MPBot by name, or all bots (\"all\")."
 		// each argument could be a classname, a team, or a count
 		if ( FStrEq( args.Arg(i), "rebels" ) )
 		{
-			iTeam = TEAM_REBELS;
+			iTeam = TEAM_DESPERADOS;
 		}
 		else if ( FStrEq( args.Arg(i), "combine" ) )
 		{
-			iTeam = TEAM_COMBINE;
+			iTeam = TEAM_VIGILANTES;
 		}
 		else if ( FStrEq( args.Arg(i), "all" ) )
 		{
@@ -1259,7 +1259,7 @@ public:
 // Return a nearby area where we can see a member of the enemy team
 CNavArea *CHL2MPBot::FindVantagePoint( float maxTravelDistance ) const
 {
-	CFindVantagePoint find( GetTeamNumber() == TEAM_COMBINE ? TEAM_REBELS : TEAM_COMBINE );
+	CFindVantagePoint find( GetTeamNumber() == TEAM_VIGILANTES ? TEAM_DESPERADOS : TEAM_VIGILANTES );
 	SearchSurroundingAreas( GetLastKnownArea(), find, maxTravelDistance );
 	return find.m_vantageArea;
 }
@@ -2332,10 +2332,10 @@ bool CHL2MPBot::IsEnemy( const CBaseEntity* them ) const
 
 	if ( HL2MPRules() && HL2MPRules()->IsTeamplay() )
 	{
-		if ( them->GetTeamNumber() == TEAM_COMBINE && this->GetTeamNumber() == TEAM_REBELS )
+		if ( them->GetTeamNumber() == TEAM_VIGILANTES && this->GetTeamNumber() == TEAM_DESPERADOS )
 			return true;
 
-		if ( them->GetTeamNumber() == TEAM_REBELS && this->GetTeamNumber() == TEAM_COMBINE )
+		if ( them->GetTeamNumber() == TEAM_DESPERADOS && this->GetTeamNumber() == TEAM_VIGILANTES )
 			return true;
 
 		return false;

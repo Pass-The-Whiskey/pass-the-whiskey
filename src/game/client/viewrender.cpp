@@ -5467,6 +5467,11 @@ void MaybeInvalidateLocalPlayerAnimation()
 		{
 			pWeapon->InvalidateBoneCache();
 		}
+		C_BaseCombatWeapon *pWeapon2 = pPlayer->GetActiveWeapon2();
+		if ( pWeapon2 != NULL )
+		{
+			pWeapon2->InvalidateBoneCache();
+		}
 
 #if defined USES_ECON_ITEMS
 		// ...and all the things you're wearing/holding/etc

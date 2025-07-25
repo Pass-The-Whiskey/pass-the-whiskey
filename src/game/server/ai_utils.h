@@ -25,7 +25,7 @@ inline CBasePlayer *AI_GetSinglePlayer()
 {
 	if ( gpGlobals->maxClients > 1 )
 	{
-		return NULL;
+		return UTIL_GetLocalPlayerOrListenServerHost();
 	}
 	
 	return UTIL_GetLocalPlayer();
@@ -33,7 +33,7 @@ inline CBasePlayer *AI_GetSinglePlayer()
 
 inline bool AI_IsSinglePlayer()
 {
-	return ( gpGlobals->maxClients == 1 );
+	return false; // ( gpGlobals->maxClients == 1 );
 }
 
 

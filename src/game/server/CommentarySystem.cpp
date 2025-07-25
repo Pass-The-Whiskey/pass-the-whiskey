@@ -1181,6 +1181,10 @@ void CPointCommentaryNode::UpdateViewThink( void )
 			{
 				pPlayer->GetActiveWeapon()->Holster();
 			}
+			if ( pPlayer->GetActiveWeapon2() )
+			{
+				pPlayer->GetActiveWeapon2()->Holster();
+			}
 		}
 
  		QAngle angGoal;
@@ -1234,6 +1238,10 @@ void CPointCommentaryNode::UpdateViewThink( void )
 		if ( pPlayer->GetActiveWeapon() )
 		{
 			pPlayer->GetActiveWeapon()->Holster();
+		}
+		if ( pPlayer->GetActiveWeapon2() )
+		{
+			pPlayer->GetActiveWeapon2()->Holster();
 		}
 
  		if ( !m_hViewPositionMover )
@@ -1357,9 +1365,16 @@ void CPointCommentaryNode::CleanupPostCommentary( void )
 	if ( !pPlayer )
 		return;
 
-	if ( ( m_hViewPositionMover || m_hViewTargetAngles ) && pPlayer->GetActiveWeapon() )
+	if ( ( m_hViewPositionMover || m_hViewTargetAngles ) )
 	{
-		pPlayer->GetActiveWeapon()->Deploy();
+		if ( pPlayer->GetActiveWeapon())
+		{
+			pPlayer->GetActiveWeapon()->Deploy();
+		}
+		if ( pPlayer->GetActiveWeapon2())
+		{
+			pPlayer->GetActiveWeapon2()->Deploy();
+		}
 	}
 
 	if ( m_hViewTargetAngles && pPlayer->GetViewEntity() == m_hViewTargetAngles )

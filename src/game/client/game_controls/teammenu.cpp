@@ -28,6 +28,8 @@
 #include <stdlib.h> // MAX_PATH define
 #include <stdio.h>
 #include "byteswap.h"
+#include "fmtstr.h"
+#include "hl2mp_gamerules.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -44,6 +46,7 @@ const char *GetStringTeamColor( int i )
 {
 	switch( i )
 	{
+	default:
 	case 0:
 		return "team0";
 
@@ -57,7 +60,6 @@ const char *GetStringTeamColor( int i )
 		return "team3";
 
 	case 4:
-	default:
 		return "team4";
 	}
 }
@@ -85,17 +87,15 @@ CTeamMenu::CTeamMenu(IViewPort *pViewPort) : Frame(NULL, PANEL_TEAM )
 	SetTitleBarVisible( false );
 	SetProportional(true);
 
-	// info window about this map
-	m_pMapInfo = new RichText( this, "MapInfo" );
-
-#if defined( ENABLE_HTML_WINDOW )
-	m_pMapInfoHTML = new HTML( this, "MapInfoHTML");
-#endif
-
-	LoadControlSettings("Resource/UI/TeamMenu.res");
-	InvalidateLayout();
-
 	m_szMapName[0] = 0;
+
+	for (int i = 0; i < 4; i++)
+	{
+		Button* pImage = new Button(this, "button", "i");
+		pImage->SetVisible(false);
+
+		m_vecTeamButtons.AddToTail(pImage);
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -111,12 +111,23 @@ CTeamMenu::~CTeamMenu()
 void CTeamMenu::ApplySchemeSettings(IScheme *pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
-	m_pMapInfo->SetFgColor( pScheme->GetColor("MapDescriptionText", Color(255, 255, 255, 0)) );
 
-	if ( *m_szMapName )
+	KeyValues *pConditions = new KeyValues( "conditions" );
+
+	if ( m_bTeamplay )
 	{
-		LoadMapPage( m_szMapName ); // reload the map description to pick up the color
+		pConditions->AddSubKey( new KeyValues( "if_teamplay" ) );
 	}
+
+	LoadControlSettings( "Resource/UI/TeamMenu.res", NULL, NULL, pConditions );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: sets the text color of the map description field
+//-----------------------------------------------------------------------------
+void CTeamMenu::ApplySettings(KeyValues* inResourceData)
+{
+	BaseClass::ApplySettings(inResourceData);
 }
 
 //-----------------------------------------------------------------------------
@@ -128,6 +139,7 @@ void CTeamMenu::AutoAssign()
 	OnClose();
 }
 
+extern ConVar fof_sv_maxteams;
 
 //-----------------------------------------------------------------------------
 // Purpose: shows the team menu
@@ -139,6 +151,15 @@ void CTeamMenu::ShowPanel(bool bShow)
 
 	if ( bShow )
 	{
+		if (m_iTeamCount != fof_sv_maxteams.GetInt() || (HL2MPRules() && m_bTeamplay != HL2MPRules()->IsTeamplay() ) )
+		{
+			m_iTeamCount = fof_sv_maxteams.GetInt();
+			m_bTeamplay = HL2MPRules()->IsTeamplay();
+
+			InvalidateLayout( false, true );
+			UpdateTeamButtons();
+		}
+
 		Activate();
 
 		SetMouseInputEnabled( true );
@@ -160,8 +181,6 @@ void CTeamMenu::ShowPanel(bool bShow)
 		SetVisible( false );
 		SetMouseInputEnabled( false );
 	}
-
-	m_pViewPort->ShowBackGround( bShow );
 }
 
 
@@ -170,188 +189,50 @@ void CTeamMenu::ShowPanel(bool bShow)
 //-----------------------------------------------------------------------------
 void CTeamMenu::Update()
 {
-	char mapname[MAX_MAP_NAME];
-
-	Q_FileBase( engine->GetLevelName(), mapname, sizeof(mapname) );
-
-	SetLabelText( "mapname", mapname );
-
-	LoadMapPage( mapname );
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: chooses and loads the text page to display that describes mapName map
-//-----------------------------------------------------------------------------
-void CTeamMenu::LoadMapPage( const char *mapName )
+void CTeamMenu::OnCommand( const char* command )
 {
-	// Save off the map name so we can re-load the page in ApplySchemeSettings().
-	Q_strncpy( m_szMapName, mapName, strlen( mapName ) + 1 );
-	
-	char mapRES[ MAX_PATH ];
-
-	char uilanguage[ 64 ];
-	uilanguage[0] = 0;
-	engine->GetUILanguage( uilanguage, sizeof( uilanguage ) );
-
-	Q_snprintf( mapRES, sizeof( mapRES ), "resource/maphtml/%s_%s.html", mapName, uilanguage );
-
-	bool bFoundHTML = false;
-
-	if ( !g_pFullFileSystem->FileExists( mapRES ) )
+	if ( Q_stricmp( command, "vguicancel" ) )
 	{
-		// try english
-		Q_snprintf( mapRES, sizeof( mapRES ), "resource/maphtml/%s_english.html", mapName );
+		engine->ClientCmd( const_cast<char*>( command ) );
 	}
-	else
-	{
-		bFoundHTML = true;
-	}
-
-	if( bFoundHTML || g_pFullFileSystem->FileExists( mapRES ) )
-	{
-		// it's a local HTML file
-		char localURL[ _MAX_PATH + 7 ];
-		Q_strncpy( localURL, "file://", sizeof( localURL ) );
-
-		char pPathData[ _MAX_PATH ];
-		g_pFullFileSystem->GetLocalPath( mapRES, pPathData, sizeof(pPathData) );
-		Q_strncat( localURL, pPathData, sizeof( localURL ), COPY_ALL_CHARACTERS );
-
-		// force steam to dump a local copy
-		g_pFullFileSystem->GetLocalCopy( pPathData );
-
-		m_pMapInfo->SetVisible( false );
-
-#if defined( ENABLE_HTML_WINDOW )
-		m_pMapInfoHTML->SetVisible( true );
-		m_pMapInfoHTML->OpenURL( localURL, NULL );
-#endif
-		InvalidateLayout();
-		Repaint();		
-
-		return;
-	}
-	else
-	{
-		m_pMapInfo->SetVisible( true );
-
-#if defined( ENABLE_HTML_WINDOW )
-		m_pMapInfoHTML->SetVisible( false );
-#endif
-	}
-
-	Q_snprintf( mapRES, sizeof( mapRES ), "maps/%s.txt", mapName);
-
-	// if no map specific description exists, load default text
-	if( !g_pFullFileSystem->FileExists( mapRES ) )
-	{
-		if ( g_pFullFileSystem->FileExists( "maps/default.txt" ) )
-		{
-			Q_snprintf ( mapRES, sizeof( mapRES ), "maps/default.txt");
-		}
-		else
-		{
-			m_pMapInfo->SetText( "" );
-			return; 
-		}
-	}
-
-	FileHandle_t f = g_pFullFileSystem->Open( mapRES, "r" );
-
-	// read into a memory block
-	int fileSize = g_pFullFileSystem->Size(f);
-	int dataSize = fileSize + sizeof( wchar_t );
-	if ( dataSize % 2 )
-		++dataSize;
-	wchar_t *memBlock = (wchar_t *)malloc(dataSize);
-	memset( memBlock, 0x0, dataSize);
-	int bytesRead = g_pFullFileSystem->Read(memBlock, fileSize, f);
-	if ( bytesRead < fileSize )
-	{
-		// NULL-terminate based on the length read in, since Read() can transform \r\n to \n and
-		// return fewer bytes than we were expecting.
-		char *data = reinterpret_cast<char *>( memBlock );
-		data[ bytesRead ] = 0;
-		data[ bytesRead+1 ] = 0;
-	}
-
-#ifndef WIN32
-	if ( ((ucs2 *)memBlock)[0] == 0xFEFF )
-	{
-		// convert the win32 ucs2 data to wchar_t
-		dataSize*=2;// need to *2 to account for ucs2 to wchar_t (4byte) growth
-		wchar_t *memBlockConverted = (wchar_t *)malloc(dataSize);	
-		V_UCS2ToUnicode( (ucs2 *)memBlock, memBlockConverted, dataSize );
-		free(memBlock);
-		memBlock = memBlockConverted;
-	}
-#else
-	// null-terminate the stream (redundant, since we memset & then trimmed the transformed buffer already)
-	memBlock[dataSize / sizeof(wchar_t) - 1] = 0x0000;
-#endif
-	// ensure little-endian unicode reads correctly on all platforms
-	CByteswap byteSwap;
-	byteSwap.SetTargetBigEndian( false );
-	byteSwap.SwapBufferToTargetEndian( memBlock, memBlock, dataSize/sizeof(wchar_t) );
-
-	// check the first character, make sure this a little-endian unicode file
-	if ( memBlock[0] != 0xFEFF )
-	{
-		// its a ascii char file
-		m_pMapInfo->SetText( reinterpret_cast<char *>( memBlock ) );
-	}
-	else
-	{
-		m_pMapInfo->SetText( memBlock+1 );
-	}
-	// go back to the top of the text buffer
-	m_pMapInfo->GotoTextStart();
-
-	g_pFullFileSystem->Close( f );
-	free(memBlock);
-
-	InvalidateLayout();
-	Repaint();
+	Close();
+	gViewPortInterface->ShowBackGround( false );
+	BaseClass::OnCommand( command );
 }
 
-/*
 //-----------------------------------------------------------------------------
 // Purpose: sets the text on and displays the team buttons
 //-----------------------------------------------------------------------------
-void CTeamMenu::MakeTeamButtons(void)
+void CTeamMenu::UpdateTeamButtons(void)
 {
-	int i = 0;
+	int iTotalPadding = ( ( m_iTeamCount - 1 ) * m_iTeamPadding );
+	int iTotalWidth = (m_iTeamWide * m_iTeamCount) + iTotalPadding;
+	int iStartX = ((GetWide() / 2) - (iTotalWidth / 2));
 
-	for( i = 0; i< m_pTeamButtons.Count(); i++ )
+	FOR_EACH_VEC(m_vecTeamButtons, i)
 	{
-		m_pTeamButtons[i]->SetVisible(false);
+		Button* pButton = m_vecTeamButtons[i];
+		if (pButton)
+		{
+			if (i + 1 > m_iTeamCount || !m_bTeamplay)
+			{
+				pButton->SetVisible(false);
+				continue;
+			}
+
+			pButton->SetSize( m_iTeamWide, m_iTeamTall );
+			pButton->SetPos( iStartX + (m_iTeamWide * i) + (m_iTeamPadding * i), 0 );
+			pButton->SetCommand( CFmtStr("jointeam %d", FIRST_GAME_TEAM + i));
+			//pButton->SetImageDefault("tm_desperados_active");
+			pButton->SetPaintBackgroundEnabled(false);
+			pButton->SetVisible(true);
+		}
 	}
+}
 
-	i = 0;
-
-	while( true )
-	{
-		const char *teamname = GameResources()->GetTeamName( i );
-
-		if ( !teamname || !teamname[0] )
-			return; // no more teams
-	
-		char buttonText[32];
-		Q_snprintf( buttonText, sizeof(buttonText), "&%i %s", i +1, teamname ); 
-		m_pTeamButtons[i]->SetText( buttonText );
-
-		m_pTeamButtons[i]->SetCommand( new KeyValues("TeamButton", "team", i ) );	
-		IScheme *pScheme = scheme()->GetIScheme( GetScheme() );
-		m_pTeamButtons[i]->SetArmedColor(pScheme->GetColor(GetStringTeamColor(i), Color(255, 255, 255, 255))  ,  pScheme->GetColor("SelectionBG", Color(255, 255, 255, 0)) );
-		m_pTeamButtons[i]->SetDepressedColor( pScheme->GetColor(GetStringTeamColor(i), Color(255, 255, 255, 255)), pScheme->GetColor("ButtonArmedBgColor", Color(255, 255, 255, 0)) );
-		m_pTeamButtons[i]->SetDefaultColor( pScheme->GetColor(GetStringTeamColor(i), Color(255, 255, 255, 255)), pScheme->GetColor("ButtonDepressedBgColor", Color(255, 255, 255, 0)) );
-		m_pTeamButtons[i]->SetVisible(true);
-
-		i++;
-	}
-} 
-
-
+/*
 //-----------------------------------------------------------------------------
 // Purpose: When a team button is pressed it triggers this function to cause the player to join a team
 //-----------------------------------------------------------------------------
@@ -379,19 +260,8 @@ void CTeamMenu::OnTeamButton( int team )
 	engine->ClientCmd(cmd);
 	SetVisible( false );
 	OnClose();
-} */
-
-//-----------------------------------------------------------------------------
-// Purpose: Sets the text of a control by name
-//-----------------------------------------------------------------------------
-void CTeamMenu::SetLabelText(const char *textEntryName, const char *text)
-{
-	Label *entry = dynamic_cast<Label *>(FindChildByName(textEntryName));
-	if (entry)
-	{
-		entry->SetText(text);
-	}
-}
+} 
+*/
 
 void CTeamMenu::OnKeyCodePressed(KeyCode code)
 {
@@ -407,7 +277,6 @@ void CTeamMenu::OnKeyCodePressed(KeyCode code)
 	case KEY_XSTICK1_LEFT:
 	case KEY_XSTICK2_LEFT:
 	case KEY_LEFT:
-	case STEAMCONTROLLER_DPAD_LEFT:
 		nDir = -1;
 		break;
 
@@ -419,7 +288,6 @@ void CTeamMenu::OnKeyCodePressed(KeyCode code)
 	case KEY_XSTICK1_RIGHT:
 	case KEY_XSTICK2_RIGHT:
 	case KEY_RIGHT:
-	case STEAMCONTROLLER_DPAD_RIGHT:
 		nDir = 1;
 		break;
 	}

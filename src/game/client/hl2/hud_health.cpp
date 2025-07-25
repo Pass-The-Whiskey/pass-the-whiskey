@@ -58,7 +58,7 @@ private:
 	int		m_bitsDamage;
 };	
 
-DECLARE_HUDELEMENT( CHudHealth );
+//DECLARE_HUDELEMENT( CHudHealth );
 DECLARE_HUD_MESSAGE( CHudHealth, Damage );
 
 //-----------------------------------------------------------------------------

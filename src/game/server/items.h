@@ -88,8 +88,6 @@ protected:
 	virtual void ComeToRest( void );
 	bool		m_bActivateWhenAtRest;
 
-private:
-	
 	COutputEvent m_OnPlayerTouch;
 	COutputEvent m_OnCacheInteraction;
 	

@@ -168,6 +168,9 @@ bool CGameRules::CanHaveAmmo( CBaseCombatCharacter *pPlayer, int iAmmoIndex )
 		// Get the max carrying capacity for this ammo
 		int iMaxCarry = GetAmmoDef()->MaxCarry( iAmmoIndex );
 
+		if ( iMaxCarry == INFINITE_AMMO )
+			return false;
+
 		// Does the player have room for more of this type of ammo?
 		if ( pPlayer->GetAmmoCount( iAmmoIndex ) < iMaxCarry )
 			return true;

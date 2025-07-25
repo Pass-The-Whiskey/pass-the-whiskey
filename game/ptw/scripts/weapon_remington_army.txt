@@ -1,0 +1,95 @@
+WeaponData
+{
+	// Weapon data is loaded by both the Game and Client DLLs.
+	"printname"			""
+	"viewmodel"			"models/weapons/v_remington_army.mdl"
+	"playermodel"		"models/weapons/w_remington_army.mdl"
+	"anim_prefix"		"python"
+	"bucket"			"2"
+	"bucket_position"	"4"
+
+	"clip_size"			"6"
+	"default_clip"		"6"
+	"primary_ammo"		"Revolver"
+	"secondary_ammo"	"None"
+
+	"weight"		"4"
+	"item_flags"		"0"
+
+	"damage"		"38"
+
+	"TimeFireDelay"			"1.26"
+
+	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
+	SoundData
+	{
+		"empty"		"Weapon_Pistol.Empty"
+		"single_shot"	"Weapon_Remington_Army.Single"
+	}
+
+	// Weapon Sprite data is loaded by the Client DLL.
+	TextureData
+	{
+		"weapon"
+		{
+				"font"		"WeaponIcons"
+				"character"	"z"
+		}
+		"weapon_s"
+		{	
+				"font"		"WeaponIconsSelected"
+				"character"	"z"
+		}
+		"ammo"
+		{
+				"font"		"WeaponIcons"
+				"character"	"q"
+		}
+		"crosshair"
+		{
+				"font"		"Crosshairs"
+				"character"	"Q"
+		}
+		"autoaim"
+		{
+				"file"		"sprites/crosshairs"
+				"x"			"0"
+				"y"			"48"
+				"width"		"24"
+				"height"	"24"
+		}
+	}
+ 	
+	ExpOffset // Ironsight
+  	{
+	     "x"   "-2"
+ 	     "y"   "-2"
+	     "z"   "0.5"
+	     "xf"   "-2"
+ 	     "yf"   "-2"
+	     "zf"   "-0.5"
+      	}
+
+	Spread // 
+  	{
+	     "crouch"	"0.02"
+ 	     "idle"	"0.026"
+	     "walk"	"0.045"
+	     "run"	"0.23"
+	     "jump"	"0.35"
+	     "speed"	"0.43"		
+    }
+	
+	"AmmoInfo"
+	{
+		"IndicatorType"			"0"
+		
+		"InvertRotation"		"0"
+		"CylinderRadius"		"18"
+		"BulletRadius"			"8"
+	}
+
+	"break_limit"			"18"
+	"break_drop_penalty"	"5"
+	"GunSmokeMult"			"0.75"
+}
